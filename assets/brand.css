@@ -1,0 +1,7 @@
+.logo svg{display:none}
+.logo:before{content:"";flex:none;width:36px;height:36px;background:url(logos/civic-pulse-icon.svg) center/contain no-repeat}
+footer .wrap>div:first-child:before{content:"";display:block;width:44px;height:44px;margin-bottom:12px;background:url(logos/civic-pulse-icon.svg) center/contain no-repeat}
+body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before,body[data-page="facility"] .hero h1:before{content:"";display:block;width:64px;height:64px;margin-bottom:16px;background-position:center;background-size:contain;background-repeat:no-repeat}
+body[data-page="security"] .hero h1:before{background-image:url(logos/security-pulse-icon.svg)}
+body[data-page="housekeeping"] .hero h1:before{background-image:url(logos/clean-pulse-icon.svg)}
+body[data-page="facility"] .hero h1:before{background-image:url(logos/facility-pulse-icon.svg)}
