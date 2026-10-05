@@ -17,10 +17,10 @@ body[data-page=""] .hero .scene>svg{display:none}
 body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);aspect-ratio:1/1;max-width:190px;background-position:top center}
 .split,.split.rev{grid-template-columns:1fr 340px}
 .split.rev{grid-template-columns:340px 1fr}
-/* compact hero banners */
-.hero{padding:8px 0 22px}
+/* compact hero banners with larger pictures */
+.hero{padding:14px 0 26px}
 .hero:before{width:300px;height:300px}
-.hero .g{gap:24px}
+.hero .g{gap:32px}
 .hero .badge{margin-bottom:6px;padding:2px 10px;font-size:.7rem}
 .hero h1{font-size:clamp(1.25rem,2.2vw,1.65rem);margin-bottom:.25em}
 .hero .lead{font-size:.84rem;line-height:1.55;margin-bottom:0}
@@ -28,7 +28,8 @@ body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);
 .hero .btn{padding:7px 14px;font-size:.8rem}
 .hero .path{margin-bottom:6px}
 .ecg{height:20px}
-.hero .scene{max-width:165px}
-.hero .scene .art{max-width:170px}
-body[data-page="security"] .hero .scene .art{max-width:135px}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:3px 8px}.logo:before{height:30px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:12px 0 22px}.hero .scene{max-width:150px}.hero .scene .art{max-width:150px}body[data-page="security"] .hero .scene .art{max-width:120px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
+.hero .scene{max-width:320px}
+.hero .scene .art{max-width:320px}
+body[data-page="security"] .hero .scene{max-width:250px}
+body[data-page="security"] .hero .scene .art{max-width:250px}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:3px 8px}.logo:before{height:30px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:14px 0 24px}.hero .scene,.hero .scene .art{max-width:260px}body[data-page="security"] .hero .scene,body[data-page="security"] .hero .scene .art{max-width:220px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
