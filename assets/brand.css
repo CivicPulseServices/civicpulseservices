@@ -3,18 +3,32 @@
 .logo:before{content:"";display:block;height:40px;aspect-ratio:708/324;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 .bar{height:66px}
 footer .wrap>div:first-child:before{content:"";display:block;width:170px;height:78px;margin-bottom:14px;padding:8px;border-radius:12px;box-sizing:border-box;background:url(img/logo-civic-pulse.png) center/contain no-repeat content-box,#fff}
-body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before{content:"";display:block;width:180px;height:80px;margin-bottom:18px;padding:8px;border-radius:12px;box-sizing:border-box;background-position:center;background-size:contain;background-repeat:no-repeat;background-origin:content-box;background-color:#fff}
+body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before{content:"";display:block;width:120px;height:50px;margin-bottom:10px;padding:5px;border-radius:10px;box-sizing:border-box;background-position:center;background-size:contain;background-repeat:no-repeat;background-origin:content-box;background-color:#fff}
 body[data-page="security"] .hero h1:before{background-image:url(img/logo-security-pulse.png)}
 body[data-page="housekeeping"] .hero h1:before{background-image:url(img/logo-clean-pulse.png)}
-body[data-page="facility"] .hero h1:before{content:"";display:block;width:64px;height:64px;margin-bottom:16px;background:url(logos/facility-pulse-icon.svg) center/contain no-repeat}
-body[data-page=""] .hero .scene{aspect-ratio:4/3.2;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+body[data-page="facility"] .hero h1:before{content:"";display:block;width:44px;height:44px;margin-bottom:10px;background:url(logos/facility-pulse-icon.svg) center/contain no-repeat}
+body[data-page=""] .hero .scene{aspect-ratio:4/3;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:16px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
 body[data-page=""] .hero .scene>svg{display:none}
 .art svg{display:none}
 .art{aspect-ratio:4/3;max-width:340px;background-color:var(--ink);background-size:cover;background-position:center;box-shadow:0 14px 34px rgba(6,20,26,.25)}
 .wrap>.split:nth-of-type(1) .art{background-image:url(img/photo-security.jpg)}
 .wrap>.split:nth-of-type(2) .art,body[data-page="housekeeping"] .scene .art{background-image:url(img/photo-clean.jpg)}
 .wrap>.split:nth-of-type(3) .art,body[data-page="facility"] .scene .art{background-image:url(img/photo-facility.jpg)}
-body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);aspect-ratio:456/640;max-width:290px;background-position:top center}
+body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);aspect-ratio:1/1;max-width:190px;background-position:top center}
 .split,.split.rev{grid-template-columns:1fr 340px}
 .split.rev{grid-template-columns:340px 1fr}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}body[data-page="security"] .scene .art{max-width:260px}}
+/* compact hero banners */
+.hero{padding:14px 0 34px}
+.hero:before{width:380px;height:380px}
+.hero .g{gap:28px}
+.hero .badge{margin-bottom:8px;padding:3px 11px;font-size:.74rem}
+.hero h1{font-size:clamp(1.4rem,2.5vw,1.9rem);margin-bottom:.3em}
+.hero .lead{font-size:.88rem;margin-bottom:0}
+.hero .cta{margin-top:12px;gap:10px}
+.hero .btn{padding:8px 16px;font-size:.84rem}
+.hero .path{margin-bottom:8px}
+.ecg{height:30px}
+.hero .scene{max-width:210px}
+.hero .scene .art{max-width:220px}
+body[data-page="security"] .hero .scene .art{max-width:170px}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.hero{padding:14px 0 30px}.hero .scene{max-width:180px}.hero .scene .art{max-width:180px}body[data-page="security"] .hero .scene .art{max-width:140px}}
