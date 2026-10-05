@@ -3,11 +3,11 @@
 .logo:before{content:"";display:block;height:40px;aspect-ratio:708/324;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 .bar{height:66px}
 footer .wrap>div:first-child:before{content:"";display:block;width:170px;height:78px;margin-bottom:14px;padding:8px;border-radius:12px;box-sizing:border-box;background:url(img/logo-civic-pulse.png) center/contain no-repeat content-box,#fff}
-body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before{content:"";display:block;width:120px;height:50px;margin-bottom:10px;padding:5px;border-radius:10px;box-sizing:border-box;background-position:center;background-size:contain;background-repeat:no-repeat;background-origin:content-box;background-color:#fff}
+body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before{content:"";display:block;width:104px;height:42px;margin-bottom:8px;padding:4px;border-radius:9px;box-sizing:border-box;background-position:center;background-size:contain;background-repeat:no-repeat;background-origin:content-box;background-color:#fff}
 body[data-page="security"] .hero h1:before{background-image:url(img/logo-security-pulse.png)}
 body[data-page="housekeeping"] .hero h1:before{background-image:url(img/logo-clean-pulse.png)}
-body[data-page="facility"] .hero h1:before{content:"";display:block;width:44px;height:44px;margin-bottom:10px;background:url(logos/facility-pulse-icon.svg) center/contain no-repeat}
-body[data-page=""] .hero .scene{aspect-ratio:4/3;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:16px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+body[data-page="facility"] .hero h1:before{content:"";display:block;width:38px;height:38px;margin-bottom:8px;background:url(logos/facility-pulse-icon.svg) center/contain no-repeat}
+body[data-page=""] .hero .scene{aspect-ratio:4/3;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.45)}
 body[data-page=""] .hero .scene>svg{display:none}
 .art svg{display:none}
 .art{aspect-ratio:4/3;max-width:340px;background-color:var(--ink);background-size:cover;background-position:center;box-shadow:0 14px 34px rgba(6,20,26,.25)}
@@ -18,17 +18,17 @@ body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);
 .split,.split.rev{grid-template-columns:1fr 340px}
 .split.rev{grid-template-columns:340px 1fr}
 /* compact hero banners */
-.hero{padding:14px 0 34px}
-.hero:before{width:380px;height:380px}
-.hero .g{gap:28px}
-.hero .badge{margin-bottom:8px;padding:3px 11px;font-size:.74rem}
-.hero h1{font-size:clamp(1.4rem,2.5vw,1.9rem);margin-bottom:.3em}
-.hero .lead{font-size:.88rem;margin-bottom:0}
-.hero .cta{margin-top:12px;gap:10px}
-.hero .btn{padding:8px 16px;font-size:.84rem}
-.hero .path{margin-bottom:8px}
-.ecg{height:30px}
-.hero .scene{max-width:210px}
-.hero .scene .art{max-width:220px}
-body[data-page="security"] .hero .scene .art{max-width:170px}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:3px 8px}.logo:before{height:30px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:16px 0 30px}.hero .scene{max-width:180px}.hero .scene .art{max-width:180px}body[data-page="security"] .hero .scene .art{max-width:140px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
+.hero{padding:8px 0 22px}
+.hero:before{width:300px;height:300px}
+.hero .g{gap:24px}
+.hero .badge{margin-bottom:6px;padding:2px 10px;font-size:.7rem}
+.hero h1{font-size:clamp(1.25rem,2.2vw,1.65rem);margin-bottom:.25em}
+.hero .lead{font-size:.84rem;line-height:1.55;margin-bottom:0}
+.hero .cta{margin-top:10px;gap:8px}
+.hero .btn{padding:7px 14px;font-size:.8rem}
+.hero .path{margin-bottom:6px}
+.ecg{height:20px}
+.hero .scene{max-width:165px}
+.hero .scene .art{max-width:170px}
+body[data-page="security"] .hero .scene .art{max-width:135px}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:3px 8px}.logo:before{height:30px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:12px 0 22px}.hero .scene{max-width:150px}.hero .scene .art{max-width:150px}body[data-page="security"] .hero .scene .art{max-width:120px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
