@@ -11,9 +11,10 @@ body[data-page=""] .hero .scene{aspect-ratio:4/3.2;background:url(img/hero-city.
 body[data-page=""] .hero .scene>svg{display:none}
 .art svg{display:none}
 .art{aspect-ratio:4/3;max-width:340px;background-color:var(--ink);background-size:cover;background-position:center;box-shadow:0 14px 34px rgba(6,20,26,.25)}
-.wrap>.split:nth-of-type(1) .art,body[data-page="security"] .scene .art{background-image:url(img/photo-security.jpg)}
+.wrap>.split:nth-of-type(1) .art{background-image:url(img/photo-security.jpg)}
 .wrap>.split:nth-of-type(2) .art,body[data-page="housekeeping"] .scene .art{background-image:url(img/photo-clean.jpg)}
 .wrap>.split:nth-of-type(3) .art,body[data-page="facility"] .scene .art{background-image:url(img/photo-facility.jpg)}
+body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);aspect-ratio:456/640;max-width:290px;background-position:top center}
 .split,.split.rev{grid-template-columns:1fr 340px}
 .split.rev{grid-template-columns:340px 1fr}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}body[data-page="security"] .scene .art{max-width:260px}}
