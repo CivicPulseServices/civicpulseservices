@@ -1,12 +1,8 @@
 .logo svg,.logo span{display:none}
-.logo{background:#fff;border-radius:10px;padding:4px 10px}
-.logo:before{content:"";display:block;height:40px;aspect-ratio:708/324;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
+.logo{background:none;border-radius:0;padding:0}
+.logo:before{content:"";display:block;height:42px;aspect-ratio:1797/628;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 .bar{height:66px}
-footer .wrap>div:first-child:before{content:"";display:block;width:170px;height:78px;margin-bottom:14px;padding:8px;border-radius:12px;box-sizing:border-box;background:url(img/logo-civic-pulse.png) center/contain no-repeat content-box,#fff}
-body[data-page="security"] .hero h1:before,body[data-page="housekeeping"] .hero h1:before{content:"";display:block;width:104px;height:42px;margin-bottom:8px;padding:4px;border-radius:9px;box-sizing:border-box;background-position:center;background-size:contain;background-repeat:no-repeat;background-origin:content-box;background-color:#fff}
-body[data-page="security"] .hero h1:before{background-image:url(img/logo-security-pulse.png)}
-body[data-page="housekeeping"] .hero h1:before{background-image:url(img/logo-clean-pulse.png)}
-body[data-page="facility"] .hero h1:before{content:"";display:block;width:38px;height:38px;margin-bottom:8px;background:url(logos/facility-pulse-icon.svg) center/contain no-repeat}
+footer .wrap>div:first-child:before{content:"";display:block;width:220px;height:77px;margin-bottom:14px;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 body[data-page=""] .hero .scene{aspect-ratio:4/3;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.45)}
 body[data-page=""] .hero .scene>svg{display:none}
 .art svg{display:none}
@@ -32,7 +28,7 @@ body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);
 .hero .scene .art{max-width:320px}
 body[data-page="security"] .hero .scene{max-width:250px}
 body[data-page="security"] .hero .scene .art{max-width:250px}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:3px 8px}.logo:before{height:30px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:14px 0 24px}.hero .scene,.hero .scene .art{max-width:260px}body[data-page="security"] .hero .scene,body[data-page="security"] .hero .scene .art{max-width:220px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:0}.logo:before{height:38px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:14px 0 24px}.hero .scene,.hero .scene .art{max-width:260px}body[data-page="security"] .hero .scene,body[data-page="security"] .hero .scene .art{max-width:220px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
 
 /* A more editorial homepage, with the site's own photography and palette. */
 body[data-page=""] .hero{padding:clamp(54px,7vw,88px) 0 clamp(72px,9vw,108px);background:linear-gradient(112deg,#06141a 0%,#0a2229 58%,#07171d 100%)}
@@ -90,3 +86,43 @@ body[data-page=""] .steps>div:before{box-shadow:0 0 0 5px var(--bg)}
  body[data-page=""] .hero .btn{padding:11px 15px;font-size:.84rem}
 }
 @media (prefers-reduced-motion:reduce){body[data-page=""] #services .split .art,body[data-page=""] .stats>div{transition:none}}
+body[data-page="housekeeping"] .cleaning-showcase{padding:64px 0;background:linear-gradient(180deg,var(--bg),var(--card))}
+body[data-page="housekeeping"] .cleaning-eyebrow{display:inline-block;margin-bottom:10px;color:#98702a;font:700 .72rem Figtree,sans-serif;letter-spacing:.13em}
+body[data-page="housekeeping"] .cleaning-showcase h2{margin-bottom:8px;font-size:clamp(1.7rem,3vw,2.25rem)}
+body[data-page="housekeeping"] .cleaning-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+body[data-page="housekeeping"] .cleaning-gallery figure{margin:0;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:0 12px 30px rgba(6,20,26,.09);transition:transform .25s ease,box-shadow .25s ease}
+body[data-page="housekeeping"] .cleaning-gallery figure:hover{transform:translateY(-5px);box-shadow:0 20px 38px rgba(6,20,26,.15)}
+body[data-page="housekeeping"] .cleaning-photo{position:relative;overflow:hidden;aspect-ratio:1.28;background:var(--panel)}
+body[data-page="housekeeping"] .cleaning-photo img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .45s ease}
+body[data-page="housekeeping"] .cleaning-gallery figure:hover img{transform:scale(1.04)}
+body[data-page="housekeeping"] .cleaning-photo span{position:absolute;left:14px;bottom:14px;padding:7px 10px;border:1px solid rgba(255,255,255,.2);border-radius:99px;background:rgba(6,20,26,.82);color:#fff;font:700 .64rem Figtree,sans-serif;letter-spacing:.08em}
+body[data-page="housekeeping"] .cleaning-gallery figcaption{padding:19px 20px 20px}
+body[data-page="housekeeping"] .cleaning-gallery h3{margin-bottom:7px;font-size:1.05rem}
+body[data-page="housekeeping"] .cleaning-gallery p{margin:0;color:var(--mute);font-size:.88rem;line-height:1.55}
+body[data-page="housekeeping"] .cleaning-context{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:clamp(28px,5vw,58px);align-items:center;margin-top:48px;padding:24px;border:1px solid var(--line);border-radius:24px;background:var(--card);box-shadow:0 16px 40px rgba(6,20,26,.08)}
+body[data-page="housekeeping"] .cleaning-context-photo{position:relative;overflow:hidden;min-height:360px;border-radius:17px;background:var(--panel)}
+body[data-page="housekeeping"] .cleaning-context-photo img{display:block;width:100%;height:100%;min-height:360px;position:absolute;inset:0;object-fit:cover;object-position:center 55%}
+body[data-page="housekeeping"] .cleaning-context-photo span{position:absolute;left:16px;bottom:16px;padding:8px 12px;border:1px solid rgba(255,255,255,.2);border-radius:99px;background:rgba(6,20,26,.84);color:#fff;font:700 .66rem Figtree,sans-serif;letter-spacing:.08em}
+body[data-page="housekeeping"] .cleaning-context-copy{padding:10px clamp(4px,2vw,24px) 10px 0}
+body[data-page="housekeeping"] .cleaning-context-copy .cleaning-eyebrow{margin-bottom:12px}
+body[data-page="housekeeping"] .cleaning-context-copy h2{max-width:18ch;margin-bottom:12px;font-size:clamp(1.7rem,3vw,2.25rem)}
+body[data-page="housekeeping"] .cleaning-context-copy>p{max-width:54ch;margin-bottom:20px;color:var(--mute);line-height:1.7}
+body[data-page="housekeeping"] .cleaning-context-steps{display:grid;gap:12px}
+body[data-page="housekeeping"] .cleaning-context-steps>div{display:flex;align-items:center;gap:12px;color:var(--mute);font-size:.9rem}
+body[data-page="housekeeping"] .cleaning-context-steps b{display:grid;flex:none;width:34px;height:34px;place-items:center;border-radius:11px;background:rgba(255,180,59,.18);color:#8d651c;font:700 .8rem 'Bricolage Grotesque',sans-serif}
+body[data-page="housekeeping"] .cleaning-context-steps strong{color:var(--tx)}
+body[data-page="housekeeping"] .pathway-feature{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center;gap:clamp(28px,5vw,58px);margin-top:24px;padding:24px;border:1px solid var(--line);border-radius:24px;background:var(--panel);box-shadow:0 16px 40px rgba(6,20,26,.12)}
+body[data-page="housekeeping"] .pathway-photo{position:relative;overflow:hidden;min-height:360px;border-radius:17px;background:#dbe5e1}
+body[data-page="housekeeping"] .pathway-photo img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center 55%}
+body[data-page="housekeeping"] .pathway-photo span{position:absolute;left:16px;bottom:16px;padding:8px 12px;border:1px solid rgba(255,255,255,.2);border-radius:99px;background:rgba(6,20,26,.84);color:#fff;font:700 .66rem Figtree,sans-serif;letter-spacing:.08em}
+body[data-page="housekeeping"] .pathway-copy{padding:10px clamp(4px,2vw,24px) 10px 0}
+body[data-page="housekeeping"] .pathway-copy .cleaning-eyebrow{margin-bottom:12px}
+body[data-page="housekeeping"] .pathway-copy h2{max-width:19ch;margin-bottom:12px;color:var(--dtx);font-size:clamp(1.7rem,3vw,2.25rem)}
+body[data-page="housekeeping"] .pathway-copy p{max-width:56ch;margin-bottom:14px;color:var(--dmute);line-height:1.7}
+body[data-page="housekeeping"] .pathway-copy .btn{margin-top:7px}
+@media (max-width:860px){body[data-page="housekeeping"] .cleaning-showcase{padding:48px 0}body[data-page="housekeeping"] .cleaning-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){body[data-page="housekeeping"] .cleaning-context{grid-template-columns:1fr;margin-top:32px;padding:18px}body[data-page="housekeeping"] .cleaning-context-photo,body[data-page="housekeeping"] .cleaning-context-photo img{min-height:300px}body[data-page="housekeeping"] .cleaning-context-copy{padding:8px 4px 4px}}
+@media (max-width:860px){body[data-page="housekeeping"] .pathway-feature{grid-template-columns:1fr;gap:22px;margin-top:18px;padding:18px}body[data-page="housekeeping"] .pathway-photo{min-height:340px}body[data-page="housekeeping"] .pathway-copy{padding:8px 4px 4px}}
+@media (max-width:520px){body[data-page="housekeeping"] .cleaning-gallery{grid-template-columns:1fr;gap:14px}body[data-page="housekeeping"] .cleaning-photo{aspect-ratio:1.45}body[data-page="housekeeping"] .cleaning-gallery figcaption{padding:16px 18px 18px}body[data-page="housekeeping"] .cleaning-context{padding:12px;border-radius:19px}body[data-page="housekeeping"] .cleaning-context-photo,body[data-page="housekeeping"] .cleaning-context-photo img{min-height:250px}}
+@media (max-width:520px){body[data-page="housekeeping"] .pathway-feature{padding:12px;border-radius:19px}body[data-page="housekeeping"] .pathway-photo{min-height:280px}}
+@media (prefers-reduced-motion:reduce){body[data-page="housekeeping"] .cleaning-gallery figure,body[data-page="housekeeping"] .cleaning-photo img{transition:none}}

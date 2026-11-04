@@ -41,8 +41,8 @@ Each page is the same self-contained HTML file. The page shown depends on the UR
 
 ## Replace before launch
 
-- [ ] Phone number (footer and contact section)
-- [ ] Office address (footer)
+- [x] Phone number: +91 9595132150
+- [x] Office address: B2 901, Nyati Elan, Wagholi, Pune - 412207
 - [ ] Email address, if not `info@civicpulseservices.com`
 - [ ] Stats (15 min response, 100% tracking, 24/7 desk, 25% savings) match what you can deliver
 - [ ] Claims such as "PSARA-licensed" and "background-verified" are true for your company
