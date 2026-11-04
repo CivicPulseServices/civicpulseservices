@@ -1,6 +1,6 @@
 .logo svg,.logo span{display:none}
 .logo{background:none;border-radius:0;padding:0}
-.logo:before{content:"";display:block;height:42px;aspect-ratio:1797/628;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
+.logo:before{content:"";display:block;height:60px;aspect-ratio:1797/628;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 .bar{height:66px}
 footer .wrap>div:first-child:before{content:"";display:block;width:220px;height:77px;margin-bottom:14px;background:url(img/logo-civic-pulse.png) center/contain no-repeat}
 body[data-page=""] .hero .scene{aspect-ratio:4/3;background:url(img/hero-city.jpg) center/cover no-repeat;border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.45)}
@@ -28,7 +28,7 @@ body[data-page="security"] .scene .art{background-image:url(img/guard-full.jpg);
 .hero .scene .art{max-width:320px}
 body[data-page="security"] .hero .scene{max-width:250px}
 body[data-page="security"] .hero .scene .art{max-width:250px}
-@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:0}.logo:before{height:38px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:14px 0 24px}.hero .scene,.hero .scene .art{max-width:260px}body[data-page="security"] .hero .scene,body[data-page="security"] .hero .scene .art{max-width:220px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
+@media (max-width:860px){.split,.split.rev{grid-template-columns:1fr}.art{max-width:100%}.bar{height:auto;padding:8px 0;gap:8px 12px}.logo{padding:0}.logo:before{height:54px}nav{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a.nb{margin-left:auto}.hero{padding:14px 0 24px}.hero .scene,.hero .scene .art{max-width:260px}body[data-page="security"] .hero .scene,body[data-page="security"] .hero .scene .art{max-width:220px}html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 110px)}}
 
 /* A more editorial homepage, with the site's own photography and palette. */
 body[data-page=""] .hero{padding:clamp(54px,7vw,88px) 0 clamp(72px,9vw,108px);background:linear-gradient(112deg,#06141a 0%,#0a2229 58%,#07171d 100%)}
