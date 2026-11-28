@@ -32,6 +32,7 @@ const dialog = document.querySelector('#record-dialog');
 if (!root || !workspace || !status || !authButton || !sitePicker || !dialog) {
   throw new Error('Admin portal elements are missing from the page.');
 }
+const maxSurveyDrawingPhotos = 10;
 
 const views = {
   overview: { title: 'Overview', description: 'A quick view of your sites and daily operations.' },
@@ -335,6 +336,10 @@ let surveyDraftId = '';
 let surveyStep = 1;
 let surveySubmissionId = '';
 let activeSurveyId = '';
+let surveyDrawingPhotos = [];
+let surveyDrawingPreviewUrls = new Map();
+let surveyDrawingSiteId = '';
+let surveyDrawingNewPhotoIds = new Set();
 
 const setStatus = (message, state = 'info') => {
   status.textContent = message;
@@ -354,6 +359,10 @@ const showSignedOut = () => {
   surveyStep = 1;
   surveySubmissionId = '';
   activeSurveyId = '';
+  surveyDrawingPhotos = [];
+  surveyDrawingSiteId = '';
+  surveyDrawingNewPhotoIds = new Set();
+  clearSurveyDrawingPreviewUrls();
   workspace.hidden = true;
   accountLabel.textContent = 'Sign in with an authorized Google account to continue.';
   authButton.textContent = 'Sign in with Google';
@@ -388,6 +397,141 @@ const request = async (path, options = {}) => {
     throw error;
   }
   return body;
+};
+
+const requestImage = async (path) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Your session expired. Sign in again.');
+  const token = await user.getIdToken();
+  const response = await fetch(`${apiBase}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'omit',
+  });
+  if (!response.ok) {
+    let message = 'Could not load the site drawing image.';
+    try {
+      const body = await response.json();
+      message = body.error || message;
+    } catch (error) {
+      console.error('Admin API returned invalid image response:', error);
+    }
+    throw new Error(message);
+  }
+  return response.blob();
+};
+
+const clearSurveyDrawingPreviewUrls = () => {
+  surveyDrawingPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+  surveyDrawingPreviewUrls = new Map();
+};
+
+const renderSurveyDrawingPhotos = async (form) => {
+  const list = form.querySelector('#survey-drawing-photos');
+  if (!list) return;
+  clearSurveyDrawingPreviewUrls();
+  list.innerHTML = surveyDrawingPhotos.map((photo) => `<article class="survey-drawing-photo" data-photo-card="${escapeHTML(photo.id)}"><img alt="${escapeHTML(photo.name)}" data-photo-preview="${escapeHTML(photo.id)}"><div><span>${escapeHTML(photo.name)}</span><button class="admin-cancel" type="button" data-action="remove-survey-drawing" data-file-id="${escapeHTML(photo.id)}">Remove</button></div><p class="survey-drawing-error" role="status" hidden></p></article>`).join('');
+  const siteId = form.elements.namedItem('site_id').value;
+  await Promise.all(surveyDrawingPhotos.map(async (photo) => {
+    const image = [...list.querySelectorAll('[data-photo-preview]')]
+      .find((entry) => entry.dataset.photoPreview === photo.id);
+    if (!image) return;
+    try {
+      const query = new URLSearchParams({ siteId, fileId: photo.id });
+      const url = URL.createObjectURL(await requestImage(`/survey-drawings?${query}`));
+      if (!surveyDrawingPhotos.some((entry) => entry.id === photo.id)) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      surveyDrawingPreviewUrls.set(photo.id, url);
+      image.src = url;
+    } catch (error) {
+      console.error('Could not load site drawing preview:', error);
+      const message = image.closest('.survey-drawing-photo').querySelector('.survey-drawing-error');
+      message.textContent = error.message;
+      message.hidden = false;
+    }
+  }));
+};
+
+const compressSurveyDrawing = async (file) => {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Choose a JPG, PNG or WebP image.');
+  }
+  if (file.size > 25 * 1024 * 1024) {
+    throw new Error('Choose an image smaller than 25 MB before compression.');
+  }
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch (error) {
+    throw new Error('This image could not be opened. Choose a JPG, PNG or WebP photo.');
+  }
+  const scale = Math.min(1, 2048 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext('2d');
+  if (!context) {
+    bitmap.close();
+    throw new Error('This browser cannot prepare the selected image.');
+  }
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const compressed = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.84));
+  if (!compressed) throw new Error('This browser could not compress the selected image.');
+  if (compressed.size > 8 * 1024 * 1024) {
+    throw new Error('This image is still larger than 8 MB after compression. Choose a smaller image.');
+  }
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.readAsDataURL(compressed);
+  });
+  return {
+    name: `${file.name.replace(/\.[^.]+$/, '') || 'site-drawing'}.jpg`,
+    mimeType: 'image/jpeg',
+    base64: String(dataUrl).split(',')[1],
+  };
+};
+
+const uploadSurveyDrawingFiles = async (form, input) => {
+  const files = [...input.files];
+  input.value = '';
+  if (!files.length) return;
+  if (surveyDrawingPhotos.length + files.length > maxSurveyDrawingPhotos) {
+    setStatus(`A survey can include up to ${maxSurveyDrawingPhotos} site drawing photos.`, 'error');
+    return;
+  }
+  const buttons = [...form.querySelectorAll('button')];
+  buttons.forEach((button) => { button.disabled = true; });
+  try {
+    for (const [index, file] of files.entries()) {
+      setStatus(`Preparing site drawing ${index + 1} of ${files.length}…`);
+      const prepared = await compressSurveyDrawing(file);
+      setStatus(`Uploading site drawing ${index + 1} of ${files.length}…`);
+      const uploaded = await request('/survey-drawings', {
+        method: 'POST',
+        body: JSON.stringify({
+          siteId: form.elements.namedItem('site_id').value,
+          surveyId: surveyDraftId,
+          file: prepared,
+        }),
+      });
+      surveyDrawingSiteId = form.elements.namedItem('site_id').value;
+      surveyDrawingPhotos.push(uploaded);
+      surveyDrawingNewPhotoIds.add(uploaded.id);
+    }
+    setStatus(`${files.length} site drawing photo${files.length === 1 ? '' : 's'} uploaded to Google Drive.`, 'success');
+  } catch (error) {
+    console.error('Could not upload site drawing:', error);
+    setStatus(error.message, 'error');
+  } finally {
+    await renderSurveyDrawingPhotos(form);
+    buttons.forEach((button) => { button.disabled = false; });
+  }
 };
 
 const selectedSiteName = () => {
@@ -592,7 +736,7 @@ const renderSurveyForm = () => {
     ${surveySections.map((section) => `<details class="survey-panel survey-section" data-section="${section.id}"><summary>Section ${section.id}: ${escapeHTML(section.title)}</summary><div class="survey-checkpoints">${section.checkpoints.map(([id, label, service]) => `<div class="survey-checkpoint${surveyCheckpointAnswers[id] ? ' survey-checkpoint-radio' : ''}" data-checkpoint="${id}" data-service="${service || section.service || ''}">${renderCheckpointAnswer(id, label)}</div>`).join('')}</div><label class="survey-section-notes">Additional notes for Section ${section.id}<textarea name="section_notes.${section.id}" rows="3" maxlength="2000" placeholder="Record observations, issues, photo references and follow-up details for this section"></textarea></label></details>`).join('')}
     ${['other_1', 'other_2'].map((id) => `<details class="survey-panel" data-additional-scope="${id}" hidden><summary><span data-additional-scope-heading>Additional scope</span></summary><div class="survey-checkpoints"><fieldset class="survey-checkpoint"><legend>Assessment</legend><label>Status<select name="additional_scope_detail.${id}.status"><option value="not_assessed">Not assessed</option><option value="ok">No issue noted</option><option value="issue">Issue / risk noted</option><option value="follow_up">Follow-up required</option></select></label><label>Requirements, measurements and notes<textarea name="additional_scope_detail.${id}.notes" rows="2" maxlength="300"></textarea></label></fieldset></div></details>`).join('')}
     <details class="survey-panel"><summary>Pre-takeover snag list and sign-off</summary><div class="survey-grid">${[1, 2, 3].map((n) => `<label>Critical snag ${n}<textarea name="snag_${n}" rows="2" maxlength="300"></textarea></label>`).join('')}<label>Society representative<input name="society_representative" maxlength="200"></label><label>Technical partner<input name="partner_technician" maxlength="200"></label><label>Civic Pulse representative<input name="civic_pulse_representative" maxlength="200"></label><label>Sign-off date<input name="signoff_date" type="date"></label></div></details>
-    <details class="survey-panel"><summary>Annex A: site sketch and shared-infrastructure map</summary><p class="survey-help">Describe boundaries, gates, STP, WTP, UGT / OHT, borewells, DG, pump rooms, garbage / OWC and garden zones. Add photo or sketch references; file uploads are not enabled.</p><label>Map notes, shared-asset ownership, drawn by, date and approximate scale<textarea name="annex_a_map_notes" rows="5" maxlength="2000"></textarea></label></details>
+    <details class="survey-panel"><summary>Annex A: site sketch and shared-infrastructure map</summary><p class="survey-help">Describe boundaries, gates, STP, WTP, UGT / OHT, borewells, DG, pump rooms, garbage / OWC and garden zones. Upload up to ${maxSurveyDrawingPhotos} JPG, PNG or WebP photos; they are stored in the site’s private Google Drive folder.</p><label>Map notes, shared-asset ownership, drawn by, date and approximate scale<textarea name="annex_a_map_notes" rows="5" maxlength="2000"></textarea></label><div class="survey-drawing-upload"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" multiple data-survey-drawing-input hidden><button class="btn" type="button" data-action="select-survey-drawings">Take or upload site drawing photos</button><span>Images are resized before upload. Maximum 8 MB each.</span></div><div id="survey-drawing-photos" class="survey-drawing-photos" aria-live="polite"></div></details>
     <details class="survey-panel"><summary>Annex B: additional notes and action items</summary><label>Follow-up actions, owner and due date<textarea name="annex_b_actions" rows="5" maxlength="2000"></textarea></label></details>
     <p class="survey-help">The final submission saves the survey in the restricted Google Sheet and emails a PDF to info@civicpulseservices.com. Avoid entering sensitive personal information that is not needed for the site assessment.</p>
     <p class="admin-status" id="survey-form-status" role="alert"></p><div class="admin-form-actions"><button class="admin-cancel" type="button" data-action="survey-back">Back to scope matrix</button><button class="btn" type="submit">Submit survey and email PDF</button></div></section>
@@ -609,7 +753,7 @@ const surveyStatusLabel = (value) => ({
   not_applicable: 'Not applicable',
 }[value] || value);
 
-const populateSurveyForm = (form, record) => {
+const populateSurveyForm = async (form, record) => {
   const survey = JSON.parse(record.survey_json);
   const setValue = (name, value) => {
     const field = form.elements.namedItem(name);
@@ -621,6 +765,11 @@ const populateSurveyForm = (form, record) => {
     'mc_admin_contact', 'phone_email', 'civic_pulse_lead', 'technical_partner_lead',
     'annex_a_map_notes', 'annex_b_actions',
   ].forEach((key) => setValue(key, survey[key]));
+  surveyDrawingPhotos = Array.isArray(survey.annex_a_drawing_photos)
+    ? survey.annex_a_drawing_photos.filter((photo) => photo && typeof photo.id === 'string' && typeof photo.name === 'string')
+    : [];
+  surveyDrawingSiteId = surveyDrawingPhotos.length ? record.site_id : '';
+  await renderSurveyDrawingPhotos(form);
   surveyServices.forEach(([id]) => {
     const checkbox = form.elements.namedItem(`service_scope.${id}`);
     if (checkbox) checkbox.checked = survey.services?.[id] === true;
@@ -699,7 +848,7 @@ const render = async () => {
     if (surveyForm) {
       if (surveyEditId) {
         const record = surveyRecords.find((entry) => entry.survey_id === surveyEditId);
-        if (record) populateSurveyForm(surveyForm, record);
+        if (record) await populateSurveyForm(surveyForm, record);
       }
       updateSurveyRelevance(surveyForm);
     }
@@ -878,13 +1027,51 @@ root.addEventListener('input', async (event) => {
 
 root.addEventListener('change', (event) => {
   const surveyForm = event.target.closest('#survey-form');
-  if (surveyForm) updateSurveyRelevance(surveyForm);
+  if (!surveyForm) return;
+  if (event.target.name === 'site_id' && surveyDrawingPhotos.length
+    && event.target.value !== surveyDrawingSiteId) {
+    event.target.value = surveyDrawingSiteId;
+    setStatus('Remove the current site drawing photos before changing the survey site.', 'error');
+    return;
+  }
+  updateSurveyRelevance(surveyForm);
+  if (event.target.matches('[data-survey-drawing-input]')) {
+    void uploadSurveyDrawingFiles(surveyForm, event.target);
+  }
 });
 
 root.addEventListener('click', async (event) => {
   const actionButton = event.target.closest('[data-action]');
   if (!actionButton) return;
-  if (actionButton.dataset.action === 'start-survey') {
+  if (actionButton.dataset.action === 'select-survey-drawings') {
+    root.querySelector('[data-survey-drawing-input]')?.click();
+  } else if (actionButton.dataset.action === 'remove-survey-drawing') {
+    const form = root.querySelector('#survey-form');
+    const fileId = actionButton.dataset.fileId;
+    actionButton.disabled = true;
+    try {
+      await request('/survey-drawings', {
+        method: 'DELETE',
+        body: JSON.stringify({
+          siteId: form.elements.namedItem('site_id').value,
+          fileId,
+        }),
+      });
+      surveyDrawingPhotos = surveyDrawingPhotos.filter((photo) => photo.id !== fileId);
+      surveyDrawingNewPhotoIds.delete(fileId);
+      if (!surveyDrawingPhotos.length) surveyDrawingSiteId = '';
+      await renderSurveyDrawingPhotos(form);
+      setStatus('Site drawing photo removed from Google Drive.', 'success');
+    } catch (error) {
+      console.error('Could not remove site drawing:', error);
+      setStatus(error.message, 'error');
+      actionButton.disabled = false;
+    }
+  } else if (actionButton.dataset.action === 'start-survey') {
+    surveyDrawingPhotos = [];
+    surveyDrawingSiteId = '';
+    surveyDrawingNewPhotoIds = new Set();
+    clearSurveyDrawingPreviewUrls();
     surveyFormOpen = true;
     surveyChoice = 'choose';
     surveyEditId = '';
@@ -897,6 +1084,10 @@ root.addEventListener('click', async (event) => {
     activeSurveyId = '';
     await render();
   } else if (actionButton.dataset.action === 'edit-survey') {
+    surveyDrawingPhotos = [];
+    surveyDrawingSiteId = '';
+    surveyDrawingNewPhotoIds = new Set();
+    clearSurveyDrawingPreviewUrls();
     surveyFormOpen = true;
     surveyEditId = actionButton.dataset.surveyId;
     surveyDraftId = surveyEditId;
@@ -914,12 +1105,30 @@ root.addEventListener('click', async (event) => {
     updateSurveyRelevance(form);
     root.querySelector(`[data-survey-step="${surveyStep}"] h3, [data-survey-step="${surveyStep}"] summary`)?.focus();
   } else if (actionButton.dataset.action === 'cancel-survey') {
+    const siteId = surveyDrawingSiteId;
+    let cleanupFailed = false;
+    for (const fileId of surveyDrawingNewPhotoIds) {
+      try {
+        await request('/survey-drawings', {
+          method: 'DELETE',
+          body: JSON.stringify({ siteId, fileId }),
+        });
+      } catch (error) {
+        console.error('Could not clean up an unsaved site drawing:', error);
+        cleanupFailed = true;
+      }
+    }
+    surveyDrawingPhotos = [];
+    surveyDrawingSiteId = '';
+    surveyDrawingNewPhotoIds = new Set();
+    clearSurveyDrawingPreviewUrls();
     surveyFormOpen = false;
     surveyEditId = '';
     surveyDraftId = '';
     surveySubmissionId = '';
     surveyChoice = 'choose';
     await render();
+    if (cleanupFailed) setStatus('Survey canceled, but one or more uploaded photos could not be removed from Google Drive.', 'error');
   } else if (actionButton.dataset.action === 'view-survey') {
     activeSurveyId = activeSurveyId === actionButton.dataset.surveyId ? '' : actionButton.dataset.surveyId;
     await render();
@@ -1027,6 +1236,9 @@ root.addEventListener('submit', async (event) => {
       date: value('signoff_date'),
     },
     annex_a_map_notes: value('annex_a_map_notes'),
+    annex_a_drawing_photos: surveyDrawingPhotos.map(({ id, name, mimeType, createdTime }) => ({
+      id, name, mimeType, createdTime,
+    })),
     annex_b_actions: value('annex_b_actions'),
   };
   const saveButton = form.querySelector('button[type="submit"]');
@@ -1044,6 +1256,9 @@ root.addEventListener('submit', async (event) => {
       }),
     });
     surveyFormOpen = false;
+    surveyDrawingPhotos = [];
+    clearSurveyDrawingPreviewUrls();
+    surveyDrawingNewPhotoIds = new Set();
     surveyEditId = '';
     surveyDraftId = '';
     surveySubmissionId = '';

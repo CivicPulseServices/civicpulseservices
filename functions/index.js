@@ -10,6 +10,7 @@ initializeApp();
 
 const spreadsheetId = defineString('SPREADSHEET_ID');
 const allowedWebOrigins = defineString('ALLOWED_WEB_ORIGINS');
+const surveyDrawingsDriveFolderId = defineString('SURVEY_DRAWINGS_DRIVE_FOLDER_ID', { default: '' });
 const gmailOAuthClientId = defineSecret('GMAIL_OAUTH_CLIENT_ID');
 const gmailOAuthClientSecret = defineSecret('GMAIL_OAUTH_CLIENT_SECRET');
 const gmailRefreshToken = defineSecret('GMAIL_REFRESH_TOKEN');
@@ -54,6 +55,117 @@ const getSheets = async () => {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
   return google.sheets({ version: 'v4', auth });
+};
+
+const getDrive = async () => {
+  const google = getGoogle();
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive'],
+  });
+  return google.drive({ version: 'v3', auth });
+};
+
+const drawingMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const maxSurveyDrawingBytes = 8 * 1024 * 1024;
+const surveyDrawingFolderName = (site) => `${String(site.site_name || site.site_id).trim()} (${site.site_id}) - Site Drawings`;
+
+const getSurveyDrawingFolder = async (drive, site) => {
+  const parentId = surveyDrawingsDriveFolderId.value().trim();
+  if (!parentId) {
+    const error = new Error('Site drawing uploads are not configured. Set SURVEY_DRAWINGS_DRIVE_FOLDER_ID to a Drive folder shared with the admin API service account.');
+    error.status = 503;
+    throw error;
+  }
+  const parent = await drive.files.get({
+    fileId: parentId,
+    fields: 'id,mimeType,driveId',
+    supportsAllDrives: true,
+  });
+  if (parent.data.mimeType !== 'application/vnd.google-apps.folder') {
+    const error = new Error('SURVEY_DRAWINGS_DRIVE_FOLDER_ID must identify a Google Drive folder.');
+    error.status = 503;
+    throw error;
+  }
+  const folderName = surveyDrawingFolderName(site);
+  const escapedName = folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const response = await drive.files.list({
+    q: `'${parentId}' in parents and name = '${escapedName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: 'files(id,name)',
+    pageSize: 10,
+    corpora: parent.data.driveId ? 'drive' : 'user',
+    ...(parent.data.driveId ? { driveId: parent.data.driveId } : {}),
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  const folder = response.data.files?.[0];
+  if (folder?.id) return folder.id;
+  const created = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId],
+    },
+    fields: 'id',
+    supportsAllDrives: true,
+  });
+  if (!created.data.id) throw new Error('Google Drive did not return the new site drawings folder ID.');
+  return created.data.id;
+};
+
+const getSurveyDrawingSite = (permission, siteId) => {
+  assertSurveyAdmin(permission, siteId);
+  const site = permission.sites.find((entry) => String(entry.site_id) === siteId);
+  if (!site) {
+    const error = new Error('The selected site is not available for survey drawings.');
+    error.status = 404;
+    throw error;
+  }
+  return site;
+};
+
+const validateSurveyDrawingFile = (file) => {
+  const mimeType = String(file?.mimeType || '').toLowerCase();
+  const encoded = String(file?.base64 || '');
+  const padding = encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0;
+  const base64Bytes = encoded.length / 4 * 3 - padding;
+  if (!drawingMimeTypes.has(mimeType)) {
+    const error = new Error('Choose a JPG, PNG or WebP image for the site drawing.');
+    error.status = 400;
+    throw error;
+  }
+  if (!encoded || encoded.length % 4 !== 0 || encoded.length > Math.ceil(maxSurveyDrawingBytes * 4 / 3) + 4
+    || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)
+    || base64Bytes > maxSurveyDrawingBytes) {
+    const error = new Error('Each site drawing image must be smaller than 8 MB.');
+    error.status = 400;
+    throw error;
+  }
+  const content = Buffer.from(encoded, 'base64');
+  const isJpeg = mimeType === 'image/jpeg' && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff;
+  const isPng = mimeType === 'image/png' && content.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const isWebp = mimeType === 'image/webp' && content.toString('ascii', 0, 4) === 'RIFF'
+    && content.toString('ascii', 8, 12) === 'WEBP';
+  if (!isJpeg && !isPng && !isWebp) {
+    const error = new Error('The selected file does not match its image format.');
+    error.status = 400;
+    throw error;
+  }
+  return content;
+};
+
+const findSurveyDrawing = async (drive, fileId, folderId) => {
+  const response = await drive.files.get({
+    fileId,
+    fields: 'id,name,mimeType,parents',
+    supportsAllDrives: true,
+  });
+  const file = response.data;
+  if (!file.parents?.includes(folderId) || !drawingMimeTypes.has(String(file.mimeType).toLowerCase())) {
+    const error = new Error('The requested drawing is not in this site’s drawings folder.');
+    error.status = 404;
+    throw error;
+  }
+  return file;
 };
 
 const tabRange = (tab) => `'${tab.replace(/'/g, "''")}'`;
@@ -223,6 +335,8 @@ const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
   line('Sign-off date', survey.sign_off?.date);
   document.moveDown().font('Helvetica-Bold').text('Annex A - Site sketch / shared infrastructure');
   document.font('Helvetica').text(survey.annex_a_map_notes || 'Not provided');
+  document.moveDown(0.5).font('Helvetica-Bold').text('Site drawing photos saved in Google Drive');
+  document.font('Helvetica').text((survey.annex_a_drawing_photos || []).map((photo) => photo.name).join('\n') || 'No photos uploaded');
   document.moveDown().font('Helvetica-Bold').text('Annex B - Follow-up actions');
   document.font('Helvetica').text(survey.annex_b_actions || 'Not provided');
   document.end();
@@ -278,6 +392,13 @@ const saveSurvey = async (sheets, permission, identity, body) => {
     error.status = 400;
     throw error;
   }
+  const drawingPhotos = survey.annex_a_drawing_photos ?? [];
+  if (!Array.isArray(drawingPhotos) || drawingPhotos.length > 10
+    || drawingPhotos.some((photo) => !photo || typeof photo.id !== 'string' || typeof photo.name !== 'string')) {
+    const error = new Error('Site drawing attachments are invalid. Remove the invalid attachment and try again.');
+    error.status = 400;
+    throw error;
+  }
   const surveyDate = String(survey.survey_date || '').trim();
   const societyName = String(survey.society_name || '').trim();
   const surveyorName = String(survey.surveyor_name || '').trim();
@@ -310,6 +431,18 @@ const saveSurvey = async (sheets, permission, identity, body) => {
     const error = new Error('This survey belongs to another site and cannot be edited here.');
     error.status = 403;
     throw error;
+  }
+  if (drawingPhotos.length) {
+    const drive = await getDrive();
+    const folderId = await getSurveyDrawingFolder(drive, site);
+    for (const photo of drawingPhotos) {
+      if (!/^[\w-]{10,}$/.test(photo.id)) {
+        const error = new Error('A site drawing attachment has an invalid ID. Remove it and upload it again.');
+        error.status = 400;
+        throw error;
+      }
+      await findSurveyDrawing(drive, photo.id, folderId);
+    }
   }
   if (existing
     && String(existing.email_submission_id) === submissionId
@@ -373,6 +506,87 @@ const saveSurvey = async (sheets, permission, identity, body) => {
     throw trackingError;
   }
   return { ok: true, surveyId, emailSent: true };
+};
+
+const uploadSurveyDrawing = async (permission, body) => {
+  const siteId = String(body.siteId || '').trim();
+  const surveyId = String(body.surveyId || '').trim();
+  const site = getSurveyDrawingSite(permission, siteId);
+  if (!/^[\w-]{1,80}$/.test(surveyId)) {
+    const error = new Error('A valid survey ID is required before uploading site drawings.');
+    error.status = 400;
+    throw error;
+  }
+  const content = validateSurveyDrawingFile(body.file);
+  const drive = await getDrive();
+  const folderId = await getSurveyDrawingFolder(drive, site);
+  const existingPhotos = await drive.files.list({
+    q: `'${folderId}' in parents and appProperties has { key='surveyId' and value='${surveyId}' } and trashed = false`,
+    fields: 'files(id)',
+    pageSize: 10,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  if ((existingPhotos.data.files || []).length >= 10) {
+    const error = new Error('A survey can include up to 10 site drawing photos.');
+    error.status = 400;
+    throw error;
+  }
+  const name = String(body.file.name || 'site-drawing').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').trim().slice(0, 180) || 'site-drawing';
+  const response = await drive.files.create({
+    requestBody: {
+      name,
+      parents: [folderId],
+      appProperties: { surveyId },
+    },
+    media: {
+      mimeType: String(body.file.mimeType).toLowerCase(),
+      body: content,
+    },
+    fields: 'id,name,mimeType,createdTime',
+    supportsAllDrives: true,
+  });
+  if (!response.data.id) throw new Error('Google Drive did not return the uploaded drawing ID.');
+  return {
+    id: response.data.id,
+    name: response.data.name || name,
+    mimeType: response.data.mimeType,
+    createdTime: response.data.createdTime,
+  };
+};
+
+const deleteSurveyDrawing = async (permission, body) => {
+  const site = getSurveyDrawingSite(permission, String(body.siteId || '').trim());
+  const fileId = String(body.fileId || '').trim();
+  if (!/^[\w-]{10,}$/.test(fileId)) {
+    const error = new Error('A valid site drawing ID is required.');
+    error.status = 400;
+    throw error;
+  }
+  const drive = await getDrive();
+  const folderId = await getSurveyDrawingFolder(drive, site);
+  await findSurveyDrawing(drive, fileId, folderId);
+  await drive.files.delete({ fileId, supportsAllDrives: true });
+  return { ok: true };
+};
+
+const downloadSurveyDrawing = async (permission, siteId, fileId) => {
+  const site = getSurveyDrawingSite(permission, siteId);
+  if (!/^[\w-]{10,}$/.test(fileId)) {
+    const error = new Error('A valid site drawing ID is required.');
+    error.status = 400;
+    throw error;
+  }
+  const drive = await getDrive();
+  const folderId = await getSurveyDrawingFolder(drive, site);
+  const file = await findSurveyDrawing(drive, fileId, folderId);
+  const response = await drive.files.get(
+    { fileId, alt: 'media', supportsAllDrives: true },
+    { responseType: 'stream' },
+  );
+  const chunks = [];
+  for await (const chunk of response.data) chunks.push(Buffer.from(chunk));
+  return { file, content: Buffer.concat(chunks) };
 };
 
 const isActive = (value) => ['true', 'yes', '1', 'active'].includes(String(value).trim().toLowerCase());
@@ -687,7 +901,7 @@ exports.adminApi = onRequest({
       res.set('Vary', 'Origin');
     }
     res.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') {
       res.status(204).send('');
       return;
@@ -725,6 +939,32 @@ exports.adminApi = onRequest({
     if (req.method === 'POST' && req.path === '/surveys') {
       const result = await saveSurvey(sheets, permission, identity, req.body || {});
       res.json(result);
+      return;
+    }
+
+    if (req.method === 'POST' && req.path === '/survey-drawings') {
+      const result = await uploadSurveyDrawing(permission, req.body || {});
+      res.json(result);
+      return;
+    }
+
+    if (req.method === 'DELETE' && req.path === '/survey-drawings') {
+      const result = await deleteSurveyDrawing(permission, req.body || {});
+      res.json(result);
+      return;
+    }
+
+    if (req.method === 'GET' && req.path === '/survey-drawings') {
+      const { file, content } = await downloadSurveyDrawing(
+        permission,
+        String(req.query.siteId || '').trim(),
+        String(req.query.fileId || '').trim(),
+      );
+      res.set('Cache-Control', 'private, no-store');
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('Content-Type', file.mimeType);
+      res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+      res.status(200).send(content);
       return;
     }
 
