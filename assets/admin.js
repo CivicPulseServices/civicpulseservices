@@ -48,6 +48,7 @@ const views = {
   operations: { title: 'Operations', description: 'Create and track service tasks across the selected site.', singular: 'task', tab: 'Operations' },
   attendance: { title: 'Attendance', description: 'Review attendance records and approval status.', singular: 'attendance record', tab: 'Attendance' },
   survey: { title: 'Site survey', description: 'Complete the integrated site survey and scope discovery checklist.' },
+  quotations: { title: 'Quotations', description: 'Prepare customer quotations from completed site surveys.' },
 };
 
 const surveyServices = [
@@ -343,6 +344,20 @@ let surveyDrawingPhotos = [];
 let surveyDrawingPreviewUrls = new Map();
 let surveyDrawingSiteId = '';
 let surveyDrawingNewPhotoIds = new Set();
+let quotationSurveys = [];
+let quotationFormOpen = false;
+let quotationDraftId = '';
+let quotationSavePayload = null;
+
+if (!isSurveyPage) {
+  const sidebar = document.querySelector('.admin-sidebar');
+  const button = document.createElement('button');
+  button.className = 'admin-nav';
+  button.dataset.view = 'quotations';
+  button.textContent = 'Quotations';
+  button.hidden = true;
+  sidebar.append(button);
+}
 
 const setStatus = (message, state = 'info') => {
   status.textContent = message;
@@ -365,6 +380,9 @@ const showSignedOut = () => {
   surveyDrawingPhotos = [];
   surveyDrawingSiteId = '';
   surveyDrawingNewPhotoIds = new Set();
+  quotationFormOpen = false;
+  quotationDraftId = '';
+  quotationSavePayload = null;
   clearSurveyDrawingPreviewUrls();
   if (isSurveyPage) {
     pageTitle.textContent = 'Admin portal';
@@ -555,7 +573,7 @@ const updateSitePicker = () => {
 };
 
 const updateNavigation = () => {
-  document.querySelectorAll('.admin-nav[data-view="sites"], .admin-nav[data-view="access"]').forEach((button) => {
+  document.querySelectorAll('.admin-nav[data-view="sites"], .admin-nav[data-view="access"], .admin-nav[data-view="quotations"]').forEach((button) => {
     button.hidden = !isGlobalAdmin();
   });
   if (surveyPageLink) surveyPageLink.hidden = !canUseSurveys();
@@ -839,8 +857,104 @@ const renderSurvey = async () => {
   return `${heading('survey')}${selectedSiteId === '*' ? '<p class="survey-help">You are viewing surveys from all sites. Select the site for a new survey in its first step.</p>' : ''}${choices}${editPrompt}${surveyFormOpen ? renderSurveyForm() : ''}`;
 };
 
+const quotationMoney = (paise) => `INR ${(paise / 100).toFixed(2)}`;
+
+const quotationItem = () => `<div class="quotation-item survey-panel">
+  <div class="survey-grid">
+    <label>Service<select name="service" required><option value="">Choose service</option><option value="security">Security</option><option value="housekeeping">Housekeeping</option></select></label>
+    <label>Billing period<select name="period" required><option value="monthly">Monthly</option><option value="one_time">One-time</option></select></label>
+    <label>Description<input name="description" maxlength="150" required placeholder="e.g. Security guard"></label>
+    <label>Quantity<input name="quantity" type="number" min="0.01" max="100000" step="0.01" required></label>
+    <label>Unit cost (INR)<input name="unitCost" type="number" min="0" max="10000000" step="0.01" required></label>
+  </div><button class="admin-cancel" type="button" data-action="remove-quotation-item">Remove item</button>
+</div>`;
+
+const renderQuotationForm = () => `<form id="quotation-form" class="survey-form">
+  <div class="survey-form-heading"><div><h3>New quotation</h3><p>Review the saved survey and enter quantities and costs. No staffing, tax or statutory rates are assumed.</p></div><button class="admin-cancel" type="button" data-action="cancel-quotation">Cancel</button></div>
+  <div class="survey-panel"><div class="survey-grid">
+    <label>Completed survey<select name="surveyId" required><option value="">Choose survey</option>${quotationSurveys.map((record) => `<option value="${escapeHTML(record.survey_id)}">${escapeHTML(record.site_name || record.site_id)} — ${escapeHTML(record.survey_date)} (${escapeHTML(record.submitted_at)})</option>`).join('')}</select></label>
+    <label>Customer name<input name="customer" maxlength="150" required></label>
+    <label>Customer email<input name="recipient" type="email" maxlength="254" required></label>
+    <label>Overhead on direct costs (%)<input name="overhead" type="number" min="0" max="1000" step="0.01" required></label>
+    <label>Profit markup on costs plus overhead (%)<input name="markup" type="number" min="0" max="1000" step="0.01" required></label>
+    <label>Tax on selling price (%)<input name="tax" type="number" min="0" max="100" step="0.01" required></label>
+  </div><label class="quotation-terms">Customer-facing terms and exclusions<textarea name="terms" rows="3" maxlength="1000"></textarea></label>
+  <p class="survey-help">Include applicable labour, statutory, equipment and relief costs in the items. Tax and rates must be verified by an authorized person.</p></div>
+  <details class="survey-panel"><summary>Review survey requirements</summary><div id="quotation-survey-details"><p>Select a survey.</p></div></details>
+  <h3>Cost items</h3><div id="quotation-items">${quotationItem()}</div>
+  <div class="admin-form-actions"><button class="admin-cancel" type="button" data-action="add-quotation-item">Add item</button><button class="admin-cancel" type="button" data-action="calculate-quotation">Review calculation</button></div>
+  <div id="quotation-preview" class="survey-panel" hidden></div>
+  <p class="survey-help">The customer PDF shows item selling prices and tax, not unit costs, overhead or profit. Confirm the recipient before sending.</p>
+  <button class="btn" type="submit">Save and email quotation</button>
+</form>`;
+
+const quotationTotals = (quotation) => `<p>Overhead: ${(quotation.rates.overhead / 100).toFixed(2)}% · Profit markup: ${(quotation.rates.markup / 100).toFixed(2)}% · Tax: ${(quotation.rates.tax / 100).toFixed(2)}%</p>${quotation.items.map((item) => `<p><b>${escapeHTML(item.service === 'security' ? 'Security' : 'Housekeeping')} — ${escapeHTML(item.description)}</b> (${item.period === 'monthly' ? 'monthly' : 'one-time'})<br>Quantity: ${(item.quantity / 100).toFixed(2)} · Unit cost: ${quotationMoney(item.unitCost)} · Direct: ${quotationMoney(item.direct)} · Overhead: ${quotationMoney(item.overhead)} · Profit: ${quotationMoney(item.profit)} · Selling price: ${quotationMoney(item.price)} · Tax: ${quotationMoney(item.tax)}</p>`).join('')}${['monthly', 'one_time'].map((period) => {
+  const total = quotation.totals[period];
+  return `<div><h4>${period === 'monthly' ? 'Monthly' : 'One-time'}</h4><p>Direct costs: ${quotationMoney(total.direct)} · Overhead: ${quotationMoney(total.overhead)} · Profit: ${quotationMoney(total.profit)}<br>Before tax: ${quotationMoney(total.price)} · Tax: ${quotationMoney(total.tax)} · <b>Total: ${quotationMoney(total.total)}</b></p></div>`;
+}).join('')}`;
+
+const renderQuotations = async () => {
+  const params = new URLSearchParams({ siteId: selectedSiteId });
+  const [surveys, quotes] = await Promise.all([request(`/surveys?${params}`), request(`/quotations?${params}`)]);
+  quotationSurveys = surveys.records.filter((record) => {
+    const survey = JSON.parse(record.survey_json);
+    return survey.services?.security === true || survey.services?.housekeeping === true;
+  }).sort((a, b) => String(b.submitted_at).localeCompare(String(a.submitted_at)));
+  const records = quotes.records.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).map((record) => `<article class="survey-record">
+    <div class="survey-record-summary"><div><h3>${escapeHTML(record.customer)} — ${escapeHTML(record.siteName)}</h3><p>${escapeHTML(record.createdAt)} · ${escapeHTML(record.recipient)} · Status: ${escapeHTML(record.status)}</p><p>Monthly: ${quotationMoney(record.totals.monthly.total)} · One-time: ${quotationMoney(record.totals.one_time.total)}</p></div>
+    <div class="survey-record-actions"><button class="admin-action" type="button" data-action="download-quotation" data-quote-id="${escapeHTML(record.id)}">Download PDF</button>${record.status === 'draft' ? `<button class="admin-action" type="button" data-action="send-quotation" data-quote-id="${escapeHTML(record.id)}" data-recipient="${escapeHTML(record.recipient)}">Email draft</button>` : ''}</div></div>
+    ${['sending', 'delivery_unknown'].includes(record.status) ? '<p class="admin-status">Delivery is uncertain. Check the sender mailbox before sending another quotation.</p>' : ''}
+    <details class="survey-record-detail"><summary>Internal cost breakdown</summary>${quotationTotals(record)}</details></article>`).join('');
+  return `${heading('quotations')}${quotationFormOpen ? renderQuotationForm() : `<div class="admin-form-actions"><button class="btn" type="button" data-action="new-quotation"${quotationSurveys.length ? '' : ' disabled'}>New quotation</button></div>${quotationSurveys.length ? '' : '<p class="survey-help">A saved survey with security or housekeeping selected is required.</p>'}<section class="survey-history"><h3>Saved quotations</h3>${records || '<p class="admin-empty">No quotations found.</p>'}</section>`}`;
+};
+
+const quotationFromForm = (form) => {
+  const data = new FormData(form);
+  const value = (name) => String(data.get(name) || '').trim();
+  return {
+    customer: value('customer'), recipient: value('recipient'), terms: value('terms'),
+    overhead: value('overhead'), markup: value('markup'), tax: value('tax'),
+    items: [...form.querySelectorAll('.quotation-item')].map((item) => Object.fromEntries(
+      ['service', 'period', 'description', 'quantity', 'unitCost'].map((name) => [name, item.querySelector(`[name="${name}"]`).value.trim()]),
+    )),
+  };
+};
+
+const updateQuotationSurvey = (form) => {
+  const record = quotationSurveys.find((entry) => entry.survey_id === form.elements.namedItem('surveyId').value);
+  const details = form.querySelector('#quotation-survey-details');
+  if (!record) {
+    details.innerHTML = '<p>Select a survey.</p>';
+  } else {
+    const survey = JSON.parse(record.survey_json);
+    const checkpoints = Object.entries(survey.checkpoints || {}).filter(([id]) => /^(?:6|7|9)\./.test(id) || id === '1.4' || id === '1.11');
+    details.innerHTML = `<p>Society: ${escapeHTML(survey.society_name)} · Survey date: ${escapeHTML(record.survey_date)}</p><p>Selected services: ${[survey.services?.security ? 'Security' : '', survey.services?.housekeeping ? 'Housekeeping' : ''].filter(Boolean).join(', ')}</p>${checkpoints.map(([id, answer]) => `<p><b>${escapeHTML(id)} ${escapeHTML(answer.question || '')}</b><br>${escapeHTML([answer.choice_label, ...(answer.choice_labels || []), answer.value, answer.notes, answer.other].filter(Boolean).join(' · ') || (answer.checked ? 'Inspected; no details provided' : 'Not recorded'))}</p>`).join('') || '<p>No relevant checklist details recorded.</p>'}${['6', '7', '9'].filter((id) => survey.section_notes?.[id]).map((id) => `<p><b>Section ${id} notes:</b> ${escapeHTML(survey.section_notes[id])}</p>`).join('')}`;
+  }
+};
+
+const downloadQuotation = async (id) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Your session expired. Sign in again.');
+  const response = await fetch(`${apiBase}/quotations/pdf?${new URLSearchParams({ id })}`, {
+    headers: { Authorization: `Bearer ${await user.getIdToken()}` }, credentials: 'omit',
+  });
+  if (!response.ok) {
+    const body = await response.json();
+    throw new Error(body.error || 'Could not download quotation.');
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `quotation-${id}.pdf`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 const render = async () => {
   if (!bootstrap) return;
+  if (currentView === 'quotations' && !isGlobalAdmin()) {
+    currentView = 'overview';
+  }
   if (currentView === 'survey' && !canUseSurveys()) {
     if (isSurveyPage) {
       root.innerHTML = '';
@@ -855,6 +969,8 @@ const render = async () => {
       ? await renderOverview()
       : currentView === 'survey'
         ? await renderSurvey()
+        : currentView === 'quotations'
+          ? await renderQuotations()
         : await renderList(currentView);
     root.innerHTML = `<div class="admin-content">${content}</div>`;
     const surveyForm = root.querySelector('#survey-form');
@@ -1024,6 +1140,9 @@ sitePicker.addEventListener('change', async () => {
   surveyStep = 1;
   surveySubmissionId = '';
   activeSurveyId = '';
+  quotationFormOpen = false;
+  quotationDraftId = '';
+  quotationSavePayload = null;
   await render();
 });
 
@@ -1036,6 +1155,11 @@ document.querySelector('.admin-sidebar')?.addEventListener('click', async (event
 });
 
 root.addEventListener('input', async (event) => {
+  const quotationForm = event.target.closest('#quotation-form');
+  if (quotationForm) {
+    quotationForm.querySelector('#quotation-preview').hidden = true;
+    return;
+  }
   const surveyForm = event.target.closest('#survey-form');
   if (surveyForm) {
     updateSurveyRelevance(surveyForm);
@@ -1051,6 +1175,12 @@ root.addEventListener('input', async (event) => {
 });
 
 root.addEventListener('change', (event) => {
+  const quotationForm = event.target.closest('#quotation-form');
+  if (quotationForm) {
+    quotationForm.querySelector('#quotation-preview').hidden = true;
+    if (event.target.name === 'surveyId') updateQuotationSurvey(quotationForm);
+    return;
+  }
   const surveyForm = event.target.closest('#survey-form');
   if (!surveyForm) return;
   if (event.target.name === 'site_id' && surveyDrawingPhotos.length
@@ -1068,7 +1198,75 @@ root.addEventListener('change', (event) => {
 root.addEventListener('click', async (event) => {
   const actionButton = event.target.closest('[data-action]');
   if (!actionButton) return;
-  if (actionButton.dataset.action === 'select-survey-drawings') {
+  if (actionButton.dataset.action === 'new-quotation') {
+    quotationFormOpen = true;
+    quotationDraftId = '';
+    quotationSavePayload = null;
+    await render();
+  } else if (actionButton.dataset.action === 'cancel-quotation') {
+    quotationFormOpen = false;
+    quotationDraftId = '';
+    quotationSavePayload = null;
+    await render();
+  } else if (actionButton.dataset.action === 'add-quotation-item') {
+    const form = root.querySelector('#quotation-form');
+    if (form.querySelectorAll('.quotation-item').length >= 50) {
+      setStatus('A quotation can contain at most 50 items.', 'error');
+      return;
+    }
+    form.querySelector('#quotation-items').insertAdjacentHTML('beforeend', quotationItem());
+    form.querySelector('#quotation-preview').hidden = true;
+  } else if (actionButton.dataset.action === 'remove-quotation-item') {
+    const form = root.querySelector('#quotation-form');
+    if (form.querySelectorAll('.quotation-item').length === 1) {
+      setStatus('A quotation must contain at least one item.', 'error');
+      return;
+    }
+    actionButton.closest('.quotation-item').remove();
+    form.querySelector('#quotation-preview').hidden = true;
+  } else if (actionButton.dataset.action === 'calculate-quotation') {
+    const form = root.querySelector('#quotation-form');
+    if (!form.reportValidity()) return;
+    actionButton.disabled = true;
+    try {
+      const { quotation } = await request('/quotations/calculate', {
+        method: 'POST', body: JSON.stringify({ quotation: quotationFromForm(form) }),
+      });
+      const preview = form.querySelector('#quotation-preview');
+      preview.innerHTML = `<h3>Internal calculation preview</h3>${quotationTotals(quotation)}`;
+      preview.hidden = false;
+    } catch (error) {
+      console.error('Could not calculate quotation:', error);
+      setStatus(error.message, 'error');
+    } finally {
+      actionButton.disabled = false;
+    }
+  } else if (actionButton.dataset.action === 'download-quotation') {
+    actionButton.disabled = true;
+    try {
+      await downloadQuotation(actionButton.dataset.quoteId);
+    } catch (error) {
+      console.error('Could not download quotation:', error);
+      setStatus(error.message, 'error');
+    } finally {
+      actionButton.disabled = false;
+    }
+  } else if (actionButton.dataset.action === 'send-quotation') {
+    if (!window.confirm(`Send this saved quotation to ${actionButton.dataset.recipient}? Verify the recipient and download the PDF first.`)) return;
+    actionButton.disabled = true;
+    let message;
+    let state = 'success';
+    try {
+      await request('/quotations/send', { method: 'POST', body: JSON.stringify({ id: actionButton.dataset.quoteId }) });
+      message = 'Quotation email sent.';
+    } catch (error) {
+      console.error('Could not confirm quotation email:', error);
+      message = error.message;
+      state = 'error';
+    }
+    await render();
+    setStatus(message, state);
+  } else if (actionButton.dataset.action === 'select-survey-drawings') {
     root.querySelector('[data-survey-drawing-input]')?.click();
   } else if (actionButton.dataset.action === 'remove-survey-drawing') {
     const form = root.querySelector('#survey-form');
@@ -1186,6 +1384,58 @@ root.addEventListener('click', async (event) => {
 });
 
 root.addEventListener('submit', async (event) => {
+  if (event.target.id === 'quotation-form') {
+    event.preventDefault();
+    const form = event.target;
+    if (!isGlobalAdmin() || !form.reportValidity()) return;
+    const survey = quotationSurveys.find((record) => record.survey_id === form.elements.namedItem('surveyId').value);
+    if (!survey) {
+      setStatus('Select a saved survey.', 'error');
+      return;
+    }
+    const quotation = quotationFromForm(form);
+    const saveButton = form.querySelector('button[type="submit"]');
+    saveButton.disabled = true;
+    let saved = false;
+    try {
+      const { quotation: calculated } = await request('/quotations/calculate', {
+        method: 'POST', body: JSON.stringify({ quotation }),
+      });
+      const preview = form.querySelector('#quotation-preview');
+      preview.innerHTML = `<h3>Internal calculation preview</h3>${quotationTotals(calculated)}`;
+      preview.hidden = false;
+      if (!window.confirm(`Save and email this quotation to ${quotation.recipient}?\nMonthly total: ${quotationMoney(calculated.totals.monthly.total)}\nOne-time total: ${quotationMoney(calculated.totals.one_time.total)}\n\nVerify the recipient, rates, tax and requirements before sending.`)) return;
+      const payload = JSON.stringify({ siteId: survey.site_id, surveyId: survey.survey_id, quotation });
+      if (quotationSavePayload !== payload) {
+        quotationDraftId = crypto.randomUUID();
+        quotationSavePayload = payload;
+      }
+      const result = await request('/quotations', {
+        method: 'POST', body: JSON.stringify({ id: quotationDraftId, siteId: survey.site_id, surveyId: survey.survey_id, quotation }),
+      });
+      saved = true;
+      if (result.record.status === 'draft') {
+        await request('/quotations/send', { method: 'POST', body: JSON.stringify({ id: quotationDraftId }) });
+      } else if (result.record.status !== 'sent') {
+        throw new Error('Quotation is already being sent or delivery is uncertain. Check the sender mailbox before sending another.');
+      }
+      quotationFormOpen = false;
+      quotationDraftId = '';
+      quotationSavePayload = null;
+      await render();
+      setStatus('Quotation saved and emailed to the customer.', 'success');
+    } catch (error) {
+      console.error('Could not save or email quotation:', error);
+      if (saved || error.saved) {
+        quotationFormOpen = false;
+        await render();
+      }
+      setStatus(error.message, 'error');
+    } finally {
+      saveButton.disabled = false;
+    }
+    return;
+  }
   if (event.target.id !== 'survey-form') return;
   event.preventDefault();
   if (!canUseSurveys()) {

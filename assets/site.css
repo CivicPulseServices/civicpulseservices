@@ -168,6 +168,10 @@ footer a{display:block;text-decoration:none;margin:4px 0}
 .survey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
 .survey-grid label,.survey-section-scope,.survey-checkpoint label{display:block;color:var(--tx);font-size:.84rem;font-weight:600}
 .survey-grid input,.survey-grid select,.survey-panel textarea,.survey-checkpoint select,.survey-checkpoint textarea{margin-top:5px;background:var(--bg);color:var(--tx);border-color:var(--line)}
+.quotation-terms{display:block;margin-top:14px;color:var(--tx);font-size:.84rem;font-weight:600}
+.quotation-terms textarea{width:100%}
+#quotation-items{display:grid;gap:12px}
+.quotation-item .admin-cancel{margin-top:12px}
 .survey-scope-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin-top:14px}
 .survey-scope-grid label.survey-scope-option{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;color:var(--tx);font-size:.86rem;cursor:pointer}
 .survey-scope-option span{color:var(--tx)}

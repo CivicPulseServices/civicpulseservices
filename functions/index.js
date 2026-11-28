@@ -3,8 +3,11 @@
 const { randomUUID } = require('node:crypto');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
+const { getFirestore } = require('firebase-admin/firestore');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const { onRequest } = require('firebase-functions/v2/https');
+const { calculateQuotation, createQuotationPdf, sendQuotationPdf, requestHash } = require('./quotation');
+const { deliverQuotation } = require('./quotation-delivery');
 
 initializeApp();
 
@@ -237,6 +240,95 @@ const listSurveys = async (sheets, permission, siteId) => {
   return siteId === '*'
     ? records
     : records.filter((record) => String(record.site_id) === String(siteId));
+};
+
+const requireQuotationAdmin = (permission) => {
+  if (!permission.superAdmin) {
+    const error = new Error('Quotations are available to Civic Pulse super-admins only.');
+    error.status = 403;
+    throw error;
+  }
+};
+
+const quotationId = (value) => {
+  const id = String(value || '');
+  if (!/^[\w-]{1,80}$/.test(id)) {
+    const error = new Error('A valid quotation ID is required.');
+    error.status = 400;
+    throw error;
+  }
+  return id;
+};
+
+const createQuotation = async (sheets, permission, identity, body) => {
+  requireQuotationAdmin(permission);
+  const id = quotationId(body.id);
+  const siteId = String(body.siteId || '').trim();
+  const surveyId = String(body.surveyId || '').trim();
+  requireSite(permission, siteId);
+  const site = permission.sites.find((entry) => String(entry.site_id) === siteId);
+  if (!site || !/^[\w-]{1,80}$/.test(surveyId)) {
+    const error = new Error('Choose an active site and a valid saved survey.');
+    error.status = 400;
+    throw error;
+  }
+  const quotation = calculateQuotation(body.quotation);
+  const hash = requestHash(siteId, surveyId, quotation);
+  const ref = getFirestore().collection('quotations').doc(id);
+  const existing = await ref.get();
+  if (existing.exists) {
+    if (existing.data().requestHash !== hash) {
+      const error = new Error('This quotation ID is already in use for different details.');
+      error.status = 409;
+      throw error;
+    }
+    return existing.data();
+  }
+  const surveys = await listSurveys(sheets, permission, siteId);
+  const surveyRecord = surveys.find((entry) => String(entry.survey_id) === surveyId);
+  if (!surveyRecord) {
+    const error = new Error('The saved survey was not found for this site.');
+    error.status = 404;
+    throw error;
+  }
+  const survey = JSON.parse(surveyRecord.survey_json);
+  if (quotation.items.some((item) => survey.services?.[item.service] !== true)) {
+    const error = new Error('Each quoted service must be selected in the saved survey.');
+    error.status = 400;
+    throw error;
+  }
+  const record = {
+    id, siteId, siteName: String(site.site_name || site.site_id),
+    surveyId, surveyDate: String(surveyRecord.survey_date),
+    surveySubmittedAt: String(surveyRecord.submitted_at),
+    surveySnapshot: survey,
+    createdAt: new Date().toISOString(), createdBy: identity.email,
+    status: 'draft', requestHash: hash, ...quotation,
+  };
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (snapshot.exists) {
+      if (snapshot.data().requestHash !== hash) {
+        const error = new Error('This quotation ID is already in use for different details.');
+        error.status = 409;
+        throw error;
+      }
+      return snapshot.data();
+    }
+    transaction.create(ref, record);
+    return record;
+  });
+};
+
+const getQuotation = async (permission, id) => {
+  requireQuotationAdmin(permission);
+  const snapshot = await getFirestore().collection('quotations').doc(quotationId(id)).get();
+  if (!snapshot.exists) {
+    const error = new Error('Quotation not found.');
+    error.status = 404;
+    throw error;
+  }
+  return snapshot.data();
 };
 
 const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
@@ -939,6 +1031,63 @@ exports.adminApi = onRequest({
     if (req.method === 'POST' && req.path === '/surveys') {
       const result = await saveSurvey(sheets, permission, identity, req.body || {});
       res.json(result);
+      return;
+    }
+
+    if (req.method === 'GET' && req.path === '/quotations') {
+      requireQuotationAdmin(permission);
+      const siteId = String(req.query.siteId || '');
+      if (siteId !== '*') {
+        requireSite(permission, siteId);
+        if (!permission.sites.some((site) => String(site.site_id) === siteId)) {
+          const error = new Error('Select an active site.');
+          error.status = 400;
+          throw error;
+        }
+      }
+      let query = getFirestore().collection('quotations');
+      if (siteId !== '*') query = query.where('siteId', '==', siteId);
+      const snapshot = await query.get();
+      res.set('Cache-Control', 'private, no-store');
+      res.json({ records: snapshot.docs.map((doc) => doc.data()) });
+      return;
+    }
+
+    if (req.method === 'POST' && req.path === '/quotations') {
+      const record = await createQuotation(sheets, permission, identity, req.body || {});
+      res.json({ record });
+      return;
+    }
+
+    if (req.method === 'POST' && req.path === '/quotations/calculate') {
+      requireQuotationAdmin(permission);
+      res.json({ quotation: calculateQuotation(req.body?.quotation) });
+      return;
+    }
+
+    if (req.method === 'POST' && req.path === '/quotations/send') {
+      requireQuotationAdmin(permission);
+      res.json(await deliverQuotation({
+        db: getFirestore(),
+        id: quotationId(req.body?.id),
+        send: sendQuotationPdf,
+        credentials: {
+          clientId: gmailOAuthClientId.value(),
+          clientSecret: gmailOAuthClientSecret.value(),
+          refreshToken: gmailRefreshToken.value(),
+        },
+      }));
+      return;
+    }
+
+    if (req.method === 'GET' && req.path === '/quotations/pdf') {
+      const record = await getQuotation(permission, req.query.id);
+      const pdf = await createQuotationPdf(record);
+      res.set('Cache-Control', 'private, no-store');
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', `attachment; filename="quotation-${record.id}.pdf"`);
+      res.status(200).send(pdf);
       return;
     }
 
