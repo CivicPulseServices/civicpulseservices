@@ -199,8 +199,12 @@ const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
       previousSectionId = answer.section.match(/^Section\s+(\d+)/)?.[1] || '';
     }
     document.moveDown(0.5).font('Helvetica-Bold').text(`${id}. ${answer.question || 'Checklist item'}`);
-    const checked = answer.checked ?? !['not_assessed', 'not_applicable'].includes(answer.status);
-    document.font('Helvetica').text(`${checked ? '[x] Inspected' : '[ ] Not inspected'}${answer.value || answer.notes ? `  |  ${answer.value || answer.notes}` : ''}`);
+    if (answer.choice !== undefined) {
+      document.font('Helvetica').text(`Selected: ${answer.choice_label || answer.choice}${answer.choice === 'other' && answer.other ? ` — ${answer.other}` : ''}`);
+    } else {
+      const checked = answer.checked ?? !['not_assessed', 'not_applicable'].includes(answer.status);
+      document.font('Helvetica').text(`${checked ? '[x] Inspected' : '[ ] Not inspected'}${answer.value || answer.notes ? `  |  ${answer.value || answer.notes}` : ''}`);
+    }
   });
   writeSectionNotes(previousSectionId);
   Object.entries(survey.section_scope || {}).forEach(([id, scope]) => {

@@ -182,6 +182,13 @@ footer a{display:block;text-decoration:none;margin:4px 0}
 .survey-checkpoint-item input{width:18px;height:18px;flex:none;margin:1px 0 0;accent-color:var(--teal)}
 .survey-checkpoint-item span{color:var(--tx);font-size:.88rem;line-height:1.45}
 .survey-checkpoint-value{width:100%;min-width:0;margin:0!important;background:var(--bg);color:var(--tx);border-color:var(--line)}
+.survey-checkpoint-radio{grid-template-columns:minmax(0,1fr)}
+.survey-checkpoint-choice h4{margin:0 0 10px;color:var(--tx);font-size:.9rem}
+.survey-radio-options{display:flex;flex-wrap:wrap;gap:8px 18px}
+.survey-radio-options label{display:flex!important;align-items:center;gap:7px;cursor:pointer;font-weight:500}
+.survey-radio-options input[type="radio"]{width:17px;height:17px;margin:0;accent-color:var(--teal)}
+.survey-radio-options .survey-radio-other{display:inline-flex!important;flex-wrap:wrap;align-items:center;gap:7px}
+.survey-radio-other input[type="text"]{width:min(220px,45vw);margin:0!important;background:var(--bg);color:var(--tx);border-color:var(--line)}
 .survey-section-notes{display:block;margin-top:16px;color:var(--tx);font-size:.84rem;font-weight:650}
 .survey-section-notes textarea{width:100%;margin-top:5px;background:var(--bg);color:var(--tx);border-color:var(--line)}
 .survey-record{padding:16px}

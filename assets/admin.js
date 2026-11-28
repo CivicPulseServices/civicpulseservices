@@ -63,9 +63,21 @@ const surveyServices = [
   ['commercial', 'Commercial & pricing inputs'],
 ];
 
+const surveyCheckpointChoices = {
+  '1.1': {
+    label: 'Contracting structure',
+    options: [
+      ['federation_master', 'Federation master contract'],
+      ['separate_society', 'Separate society contracts'],
+      ['hybrid', 'Hybrid'],
+      ['other', 'Other'],
+    ],
+  },
+};
+
 const surveySections = [
   { id: '1', title: 'Governance, shared infrastructure & estate manager', checkpoints: [
-    ['1.1', 'Contracting structure: federation master contract, separate society contracts, or hybrid'],
+    ['1.1', 'Contracting structure'],
     ['1.2', 'Estate / facility manager requirement, reporting line, duties and office facilities', 'estate_manager'],
     ['1.3', 'Statutory certificates: MPCB CTO, Fire NOC, lift licences, DG CPCB and electrical audit'],
     ['1.4', 'Current headcount and whether staff are retained, absorbed or replaced'],
@@ -391,6 +403,17 @@ const checkpointValueHint = (id, label) => {
   return 'Short detail';
 };
 
+const renderCheckpointAnswer = (id, label) => {
+  const choice = surveyCheckpointChoices[id];
+  if (!choice) {
+    return `<label class="survey-checkpoint-item"><input type="checkbox" name="checkpoint.${id}.checked"><span>${escapeHTML(id)} ${escapeHTML(label)}</span></label><input class="survey-checkpoint-value" name="checkpoint.${id}.value" maxlength="200" aria-label="${escapeHTML(id)} short detail" placeholder="${escapeHTML(checkpointValueHint(id, label))}">`;
+  }
+  const otherName = `checkpoint.${id}.other`;
+  return `<div class="survey-checkpoint-choice"><h4>${escapeHTML(id)} ${escapeHTML(choice.label)}</h4><div class="survey-radio-options">${choice.options.map(([value, optionLabel]) => value === 'other'
+    ? `<label class="survey-radio-other"><input type="radio" name="checkpoint.${id}.choice" value="${value}"><span>${escapeHTML(optionLabel)}</span><input type="text" name="${otherName}" data-other-for="${id}" maxlength="200" aria-label="Specify other ${escapeHTML(choice.label.toLowerCase())}" placeholder="Please specify" disabled></label>`
+    : `<label><input type="radio" name="checkpoint.${id}.choice" value="${value}"><span>${escapeHTML(optionLabel)}</span></label>`).join('')}</div></div>`;
+};
+
 const updateSurveyRelevance = (form) => {
   const isServiceSelected = (service) => !service
     || form.elements.namedItem(`service_scope.${service}`)?.checked === true;
@@ -401,6 +424,11 @@ const updateSurveyRelevance = (form) => {
     const hasVisibleCheckpoints = [...section.querySelectorAll('.survey-checkpoint')]
       .some((checkpoint) => !checkpoint.hidden);
     section.hidden = !hasVisibleCheckpoints;
+  });
+  form.querySelectorAll('[data-other-for]').forEach((input) => {
+    const selected = form.querySelector(`input[name="checkpoint.${input.dataset.otherFor}.choice"]:checked`);
+    input.disabled = selected?.value !== 'other';
+    if (input.disabled) input.value = '';
   });
   form.querySelectorAll('[data-additional-scope]').forEach((scope) => {
     const name = form.elements.namedItem(`additional_scope.${scope.dataset.additionalScope}`)?.value.trim();
@@ -429,7 +457,7 @@ const renderSurveyForm = () => {
     <section class="survey-stage" data-survey-step="1"${surveyStep === 1 ? '' : ' hidden'}><fieldset class="survey-panel"><legend>Step 1: Site and survey details</legend><div class="survey-grid"><label>Site<select name="site_id" required>${bootstrap.sites.map((site) => `<option value="${escapeHTML(site.site_id)}"${selectedSurveySite === site.site_id ? ' selected' : ''}>${escapeHTML(site.site_name || site.site_id)}</option>`).join('')}</select></label>${metadata.map(([key, label, type, required]) => `<label>${label}<input name="${key}" type="${type}"${key === 'survey_date' ? ` value="${today}"` : ''}${required ? ' required' : ''} maxlength="200"></label>`).join('')}</div></fieldset><div class="admin-form-actions"><button class="btn" type="button" data-action="survey-next">Continue to scope matrix</button></div></section>
     <section class="survey-stage" data-survey-step="2"${surveyStep === 2 ? '' : ' hidden'}><details class="survey-panel" open><summary>Step 2: Quick scope matrix</summary><p class="survey-help">Check each service required for this site. Only the matching survey questions will be shown. Leave a service unchecked if it is not required.</p><div class="survey-scope-grid">${surveyServices.map(([id, label]) => `<label class="survey-scope-option"><input type="checkbox" name="service_scope.${id}" value="true"><span>${escapeHTML(label)}</span></label>`).join('')}${['other_1', 'other_2'].map((id, index) => `<label class="survey-custom-scope">Additional scope ${index + 1}<input type="text" name="additional_scope.${id}" maxlength="100" placeholder="Describe an additional service"></label>`).join('')}</div></details><div class="admin-form-actions"><button class="admin-cancel" type="button" data-action="survey-back">Back</button><button class="btn" type="button" data-action="survey-next">Continue to survey questions</button></div></section>
     <section class="survey-stage" data-survey-step="3"${surveyStep === 3 ? '' : ' hidden'}><p class="survey-help">Step 3: Tick each item you inspected and add a short count, reading, capacity or finding. Add longer observations in the notes box at the end of each section.</p>
-    ${surveySections.map((section) => `<details class="survey-panel survey-section" data-section="${section.id}"><summary>Section ${section.id}: ${escapeHTML(section.title)}</summary><div class="survey-checkpoints">${section.checkpoints.map(([id, label, service]) => `<div class="survey-checkpoint" data-checkpoint="${id}" data-service="${service || section.service || ''}"><label class="survey-checkpoint-item"><input type="checkbox" name="checkpoint.${id}.checked"><span>${escapeHTML(id)} ${escapeHTML(label)}</span></label><input class="survey-checkpoint-value" name="checkpoint.${id}.value" maxlength="200" aria-label="${escapeHTML(id)} short detail" placeholder="${escapeHTML(checkpointValueHint(id, label))}"></div>`).join('')}</div><label class="survey-section-notes">Additional notes for Section ${section.id}<textarea name="section_notes.${section.id}" rows="3" maxlength="2000" placeholder="Record observations, issues, photo references and follow-up details for this section"></textarea></label></details>`).join('')}
+    ${surveySections.map((section) => `<details class="survey-panel survey-section" data-section="${section.id}"><summary>Section ${section.id}: ${escapeHTML(section.title)}</summary><div class="survey-checkpoints">${section.checkpoints.map(([id, label, service]) => `<div class="survey-checkpoint${surveyCheckpointChoices[id] ? ' survey-checkpoint-radio' : ''}" data-checkpoint="${id}" data-service="${service || section.service || ''}">${renderCheckpointAnswer(id, label)}</div>`).join('')}</div><label class="survey-section-notes">Additional notes for Section ${section.id}<textarea name="section_notes.${section.id}" rows="3" maxlength="2000" placeholder="Record observations, issues, photo references and follow-up details for this section"></textarea></label></details>`).join('')}
     ${['other_1', 'other_2'].map((id) => `<details class="survey-panel" data-additional-scope="${id}" hidden><summary><span data-additional-scope-heading>Additional scope</span></summary><div class="survey-checkpoints"><fieldset class="survey-checkpoint"><legend>Assessment</legend><label>Status<select name="additional_scope_detail.${id}.status"><option value="not_assessed">Not assessed</option><option value="ok">No issue noted</option><option value="issue">Issue / risk noted</option><option value="follow_up">Follow-up required</option></select></label><label>Requirements, measurements and notes<textarea name="additional_scope_detail.${id}.notes" rows="2" maxlength="300"></textarea></label></fieldset></div></details>`).join('')}
     <details class="survey-panel"><summary>Pre-takeover snag list and sign-off</summary><div class="survey-grid">${[1, 2, 3].map((n) => `<label>Critical snag ${n}<textarea name="snag_${n}" rows="2" maxlength="300"></textarea></label>`).join('')}<label>Society representative<input name="society_representative" maxlength="200"></label><label>Technical partner<input name="partner_technician" maxlength="200"></label><label>Civic Pulse representative<input name="civic_pulse_representative" maxlength="200"></label><label>Sign-off date<input name="signoff_date" type="date"></label></div></details>
     <details class="survey-panel"><summary>Annex A: site sketch and shared-infrastructure map</summary><p class="survey-help">Describe boundaries, gates, STP, WTP, UGT / OHT, borewells, DG, pump rooms, garbage / OWC and garden zones. Add photo or sketch references; file uploads are not enabled.</p><label>Map notes, shared-asset ownership, drawn by, date and approximate scale<textarea name="annex_a_map_notes" rows="5" maxlength="2000"></textarea></label></details>
@@ -476,6 +504,14 @@ const populateSurveyForm = (form, record) => {
     const checked = form.elements.namedItem(`checkpoint.${id}.checked`);
     if (checked) {
       checked.checked = checkpoint.checked ?? !['not_assessed', 'not_applicable'].includes(checkpoint.status);
+    }
+    if (surveyCheckpointChoices[id]) {
+      const selectedChoice = form.elements.namedItem(`checkpoint.${id}.choice`);
+      if (selectedChoice) {
+        [...form.querySelectorAll(`input[name="checkpoint.${id}.choice"]`)]
+          .forEach((radio) => { radio.checked = radio.value === checkpoint.choice; });
+      }
+      setValue(`checkpoint.${id}.other`, checkpoint.other ?? '');
     }
     setValue(`checkpoint.${id}.value`, checkpoint.value ?? checkpoint.notes ?? '');
   });
@@ -808,8 +844,16 @@ root.addEventListener('submit', async (event) => {
         return [id, {
           question: label,
           section: checkpoint.closest('.survey-section').querySelector('summary').textContent.trim(),
-          checked: form.elements.namedItem(`checkpoint.${id}.checked`).checked,
-          value: value(`checkpoint.${id}.value`),
+          ...(surveyCheckpointChoices[id]
+            ? {
+              choice: form.elements.namedItem(`checkpoint.${id}.choice`).value,
+              choice_label: surveyCheckpointChoices[id].options.find(([option]) => option === form.elements.namedItem(`checkpoint.${id}.choice`).value)?.[1] || '',
+              other: value(`checkpoint.${id}.other`),
+            }
+            : {
+              checked: form.elements.namedItem(`checkpoint.${id}.checked`).checked,
+              value: value(`checkpoint.${id}.value`),
+            }),
         }];
       })),
     critical_snags: [1, 2, 3].map((n) => value(`snag_${n}`)).filter(Boolean),
