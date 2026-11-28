@@ -117,7 +117,7 @@ footer a{display:block;text-decoration:none;margin:4px 0}
 .admin-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;align-items:start}
 .admin-sidebar{display:grid;min-width:0;gap:5px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:16px}
 .admin-sidebar-title{margin:4px 10px 8px;color:var(--mute);font-size:.68rem;font-weight:700;letter-spacing:.12em}
-.admin-nav{width:100%;padding:10px 12px;border:0;border-radius:9px;background:transparent;color:var(--tx);font:500 .9rem Figtree,system-ui,sans-serif;text-align:left;cursor:pointer}
+.admin-nav{display:block;width:100%;padding:10px 12px;border:0;border-radius:9px;background:transparent;color:var(--tx);font:500 .9rem Figtree,system-ui,sans-serif;text-align:left;text-decoration:none;cursor:pointer}
 .admin-nav:hover,.admin-nav.active{background:var(--panel);color:var(--dtx)}
 .admin-content{min-width:0}
 .admin-page-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:18px}

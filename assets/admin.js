@@ -29,6 +29,9 @@ const authButton = document.querySelector('#admin-auth-button');
 const accountLabel = document.querySelector('#admin-account-label');
 const sitePicker = document.querySelector('#admin-site-picker');
 const dialog = document.querySelector('#record-dialog');
+const surveyPageLink = document.querySelector('[data-survey-page-link]');
+const pageTitle = document.querySelector('#admin-page-title');
+const isSurveyPage = document.body.dataset.page === 'site-survey';
 if (!root || !workspace || !status || !authButton || !sitePicker || !dialog) {
   throw new Error('Admin portal elements are missing from the page.');
 }
@@ -324,7 +327,7 @@ const isGlobalAdmin = () => bootstrap?.role === 'super_admin';
 const canEditSelectedSite = () => isGlobalAdmin()
   || (selectedSiteId !== '*' && bootstrap?.siteRoles?.[selectedSiteId] === 'site_admin');
 let bootstrap = null;
-let currentView = 'overview';
+let currentView = isSurveyPage ? 'survey' : 'overview';
 let selectedSiteId = '';
 let currentRecords = [];
 let currentSearch = '';
@@ -348,7 +351,7 @@ const setStatus = (message, state = 'info') => {
 
 const showSignedOut = () => {
   bootstrap = null;
-  currentView = 'overview';
+  currentView = isSurveyPage ? 'survey' : 'overview';
   selectedSiteId = '';
   currentRecords = [];
   currentSearch = '';
@@ -363,6 +366,10 @@ const showSignedOut = () => {
   surveyDrawingSiteId = '';
   surveyDrawingNewPhotoIds = new Set();
   clearSurveyDrawingPreviewUrls();
+  if (isSurveyPage) {
+    pageTitle.textContent = 'Admin portal';
+    document.title = 'Admin portal | Civic Pulse Services';
+  }
   workspace.hidden = true;
   accountLabel.textContent = 'Sign in with an authorized Google account to continue.';
   authButton.textContent = 'Sign in with Google';
@@ -551,8 +558,7 @@ const updateNavigation = () => {
   document.querySelectorAll('.admin-nav[data-view="sites"], .admin-nav[data-view="access"]').forEach((button) => {
     button.hidden = !isGlobalAdmin();
   });
-  const surveyButton = document.querySelector('.admin-nav[data-view="survey"]');
-  if (surveyButton) surveyButton.hidden = !canUseSurveys();
+  if (surveyPageLink) surveyPageLink.hidden = !canUseSurveys();
 };
 
 const canUseSurveys = () => isGlobalAdmin()
@@ -835,7 +841,14 @@ const renderSurvey = async () => {
 
 const render = async () => {
   if (!bootstrap) return;
-  if (currentView === 'survey' && !canUseSurveys()) currentView = 'overview';
+  if (currentView === 'survey' && !canUseSurveys()) {
+    if (isSurveyPage) {
+      root.innerHTML = '';
+      setStatus('Site surveys are available to site admins and Civic Pulse admins only.', 'error');
+      return;
+    }
+    currentView = 'overview';
+  }
   root.innerHTML = '<p class="admin-loading" role="status">Loading sheet data…</p>';
   try {
     const content = currentView === 'overview'
@@ -923,7 +936,7 @@ const openForm = (view, rowNumber) => {
 };
 
 const loadWorkspace = async (user) => {
-  currentView = 'overview';
+  currentView = isSurveyPage ? 'survey' : 'overview';
   currentSearch = '';
   authButton.disabled = true;
   authButton.textContent = 'Checking access…';
@@ -935,6 +948,16 @@ const loadWorkspace = async (user) => {
     accountLabel.textContent = `${user.displayName || user.email} · ${bootstrap.role.replace('_', ' ')}`;
     authButton.textContent = 'Sign out';
     authButton.disabled = false;
+    if (isSurveyPage && !canUseSurveys()) {
+      workspace.hidden = true;
+      pageTitle.textContent = 'Admin portal';
+      setStatus('This account does not have permission to access site surveys.', 'error');
+      return;
+    }
+    if (isSurveyPage) {
+      pageTitle.textContent = 'Site survey';
+      document.title = 'Site survey | Civic Pulse Services';
+    }
     workspace.hidden = false;
     updateSitePicker();
     updateNavigation();
@@ -943,6 +966,8 @@ const loadWorkspace = async (user) => {
     console.error('Could not authorize admin user:', error);
     bootstrap = null;
     workspace.hidden = true;
+    if (pageTitle) pageTitle.textContent = 'Admin portal';
+    if (isSurveyPage) document.title = 'Admin portal | Civic Pulse Services';
     accountLabel.textContent = user.email;
     authButton.textContent = 'Sign out';
     authButton.disabled = false;
@@ -1002,7 +1027,7 @@ sitePicker.addEventListener('change', async () => {
   await render();
 });
 
-document.querySelector('.admin-sidebar').addEventListener('click', async (event) => {
+document.querySelector('.admin-sidebar')?.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-view]');
   if (!button) return;
   currentView = button.dataset.view;
