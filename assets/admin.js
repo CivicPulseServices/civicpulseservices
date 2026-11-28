@@ -63,16 +63,86 @@ const surveyServices = [
   ['commercial', 'Commercial & pricing inputs'],
 ];
 
-const surveyCheckpointChoices = {
-  '1.1': {
-    label: 'Contracting structure',
-    options: [
-      ['federation_master', 'Federation master contract'],
-      ['separate_society', 'Separate society contracts'],
-      ['hybrid', 'Hybrid'],
-      ['other', 'Other'],
-    ],
-  },
+const radioAnswer = (label, options, other = true) => ({
+  type: 'radio',
+  label,
+  options: options.filter((option) => option.toLowerCase() !== 'other')
+    .map((option) => [option.toLowerCase().replace(/[^a-z0-9]+/g, '_'), option]),
+  ...(other ? { other: true } : {}),
+});
+const multiAnswer = (label, options, other = true) => ({
+  type: 'multi',
+  label,
+  options: options.filter((option) => option.toLowerCase() !== 'other')
+    .map((option) => [option.toLowerCase().replace(/[^a-z0-9]+/g, '_'), option]),
+  ...(other ? { other: true } : {}),
+});
+const detailAnswer = (hint) => ({ type: 'detail', hint, other: true });
+
+const surveyCheckpointAnswers = {
+  '1.1': radioAnswer('Contracting structure', ['Federation master contract', 'Separate society contracts', 'Hybrid'], true),
+  '1.2': radioAnswer('Is an estate / facility manager required?', ['Required', 'Not required', 'To be decided']),
+  '1.3': multiAnswer('Certificates / audits available', ['MPCB CTO', 'Fire NOC', 'Lift licences', 'DG CPCB', 'Electrical audit'], true),
+  '1.4': radioAnswer('Existing staff plan', ['Retain', 'Absorb', 'Replace', 'Mixed approach', 'To be decided']),
+  '1.5': multiAnswer('Current pain points', ['Service quality', 'Staffing', 'Response time', 'Cost / billing', 'Supervision', 'Compliance'], true),
+  '1.6': multiAnswer('Shared assets / infrastructure', ['Roads', 'Street lights', 'Water systems', 'Drainage', 'Boundary / gates', 'Utilities'], true),
+  '1.7': radioAnswer('Common-cost split basis', ['Equal split', 'Per flat / unit', 'Area based', 'Usage based', 'Agreed share'], true),
+  '1.8': radioAnswer('Federation / approval status', ['Registered', 'Registration in progress', 'Not registered', 'Approval process defined', 'To be decided']),
+  '1.9': multiAnswer('Outgoing-vendor details to capture', ['Vendor names', 'Rates', 'Contract end dates', 'Notice periods', 'Handover', 'Disputes'], true),
+  '1.10': radioAnswer('Takeover plan', ['Single-date takeover', 'Phased takeover', 'To be decided']),
+  '1.11': multiAnswer('Employer / compliance responsibilities', ['PF', 'ESIC', 'Labour licence', 'Insurance', 'Employer responsibility agreed'], true),
+  '1.12': multiAnswer('Known risks', ['Disputes / notices', 'Complaints', 'Vendor issues', 'Resident concerns', 'Operational risks'], true),
+  '2.1': multiAnswer('Water sources', ['Municipal', 'Borewell', 'Tanker'], true),
+  '2.2': radioAnswer('Tanker ordering responsibility', ['Society', 'Vendor', 'Shared', 'To be decided']),
+  '2.3': multiAnswer('Water infrastructure', ['UGT', 'OHT', 'Level controllers', 'Transfer pumps', 'Booster pumps'], true),
+  '2.4': radioAnswer('Pump-room equipment condition', ['Good', 'Needs repair', 'Replace', 'Not inspected']),
+  '2.5': radioAnswer('Mechanized tank-cleaning frequency', ['Quarterly', 'Half-yearly', 'Annual', 'As required'], true),
+  '2.6': multiAnswer('Water checks required', ['Water meter', 'Borewell yield', 'TDS', 'Monthly cost', 'Leakage / water loss'], true),
+  '3.1': radioAnswer('STP technology', ['MBBR', 'SBR', 'ASP', 'MBR', 'Other']),
+  '3.2': multiAnswer('WTP treatment stages', ['Pressure sand filter', 'Activated carbon', 'Softener', 'RO', 'UV / disinfection'], true),
+  '3.3': multiAnswer('Equipment / automation present', ['Pumps', 'Blowers', 'PLC', 'VFD', 'Automation', 'Sensors'], true),
+  '3.4': radioAnswer('Treated-water laboratory reports', ['Available and compliant', 'Available with issues', 'Not available', 'To be requested']),
+  '3.5': radioAnswer('Sludge handling responsibility', ['Society', 'Vendor', 'Shared', 'To be decided']),
+  '3.6': radioAnswer('MPCB consent status', ['Valid', 'Expired', 'Renewal in progress', 'Not available', 'To be verified']),
+  '3.7': multiAnswer('Observed issues', ['Overload', 'Overflow / bypass', 'Odour', 'Treated-water quality', 'Complaints'], true),
+  '3.8': radioAnswer('Electricity / backup setup', ['Dedicated meter with DG backup', 'Dedicated meter, no DG backup', 'Shared meter with DG backup', 'Shared meter, no DG backup', 'To be confirmed']),
+  '3.9': multiAnswer('Operations / commercial coverage', ['Technical partner', 'Operator shifts', 'Payroll', 'Chemicals / spares', 'SLA', 'Response time', 'Uptime'], true),
+  '3.10': multiAnswer('Safety / handover checks', ['Confined-space safety', 'PPE', 'Earthing', 'Chemical storage', 'Documents', 'Handover stock'], true),
+  '3.11': multiAnswer('Outgoing-operator / equipment handover', ['Operator cooperation', 'Equipment warranty', 'AMC details', 'Supplier details', 'Equipment age'], true),
+  '4.1': radioAnswer('Collection arrangement', ['Door-to-door', 'Central collection', 'Mixed'], true),
+  '4.2': multiAnswer('Waste processing / collection', ['OWC', 'Vermicompost', 'Municipal pickup', 'Shredder', 'Curing space'], true),
+  '4.3': radioAnswer('Dry-waste / scrap arrangement', ['Municipal pickup', 'Recycler', 'Society-managed', 'Vendor-managed'], true),
+  '4.4': radioAnswer('Consumables responsibility', ['Society', 'Vendor', 'Shared', 'To be decided']),
+  '5.2': radioAnswer('Gardening machinery / tools', ['Society-owned', 'Vendor-owned', 'Mixed', 'Not available']),
+  '5.1': multiAnswer('Landscape checks', ['Green areas', 'Irrigation', 'Garden area', 'Treated-water pressure'], true),
+  '5.3': multiAnswer('Tree / garden compliance', ['Tree permissions', 'Protected trees', 'Garden-waste disposal arranged'], true),
+  '5.4': multiAnswer('Irrigation / staffing needs', ['Municipal water', 'Borewell', 'Treated water', 'Seasonal plan', 'Leakage risk', 'Dedicated gardeners'], true),
+  '6.1': multiAnswer('Areas / floor types present', ['Tiles / stone', 'Epoxy / concrete', 'Basements', 'Lifts', 'Clubhouse', 'Multiple towers'], true),
+  '6.2': multiAnswer('Machine facilities available', ['Power points', 'Water points', 'Storage room', 'Access constraints'], true),
+  '6.3': multiAnswer('Equipment / facilities', ['Society machines available', 'Consumables provided', 'Staff facilities available', 'Civic Pulse equipment required'], true),
+  '7.1': multiAnswer('Security locations / risks', ['Main gates', 'Pedestrian gates', 'Boundary', 'Blind spots', 'Open plots', 'Guard posts'], true),
+  '7.2': multiAnswer('Access-control systems', ['Visitor app', 'Barriers', 'RFID', 'Intercom', 'Mobile signal available'], true),
+  '7.3': radioAnswer('PSARA / guard readiness', ['Compliant', 'Action required', 'Not applicable', 'To be verified']),
+  '8.1': multiAnswer('Technical roles required', ['Electrician', 'Plumber', 'Multi-skilled technician'], true),
+  '8.2': multiAnswer('AMCs / equipment present', ['DG', 'Lifts', 'Fire systems', 'Solar'], true),
+  '8.3': multiAnswer('Amenities present', ['Clubhouse', 'Gym', 'Swimming pool', 'Sports facilities', 'Booking system'], true),
+  '8.4': multiAnswer('Pest-control coverage', ['Common areas', 'Tanks', 'Basements', 'Individual units'], true),
+  '8.5': multiAnswer('Admin / software services required', ['Accounting', 'Billing', 'Statutory filings', 'Helpdesk', 'Society software'], true),
+  '8.6': multiAnswer('Shared infrastructure present', ['Street lights', 'Roads', 'Drainage', 'Boundary walls'], true),
+  '9.1': radioAnswer('Pricing basis', ['Fixed monthly fee', 'Per unit', 'Cost plus / management fee', 'Pass-through costs'], true),
+  '9.2': multiAnswer('Exclusions to confirm', ['CapEx', 'Civil repairs', 'Legacy fines', 'Resident damage', 'Statutory fees'], true),
+  '9.3': multiAnswer('Manpower planning', ['Service-wise headcount', 'Shift coverage', 'Weekly-off relief', 'Supervisor coverage'], true),
+  '9.4': multiAnswer('Commercial terms to agree', ['Security deposit', 'Payment terms', 'SLA penalties', 'Review cycle', 'Termination', 'Lock-in'], true),
+  '9.5': multiAnswer('Documents to collect', ['Consent', 'Drawings', 'Contracts', 'Bills', 'Reports', 'Resolutions'], true),
+  '10.1': detailAnswer('Inlet flow reading / date / time / photo'),
+  '10.2': detailAnswer('Outlet flow reading / date / time / photo'),
+  '10.3': detailAnswer('WTP reading / date / time / photo'),
+  '10.4': detailAnswer('Electricity reading / date / time / photo'),
+  '10.5': detailAnswer('Meter / UGT / OHT reading / photo'),
+  '10.6': detailAnswer('pH / DO / colour / odour / photo'),
+  '10.7': detailAnswer('Sludge level / lifting date / photo'),
+  '10.8': detailAnswer('Chemical / spares / quantity'),
+  '10.9': detailAnswer('Fault / equipment / photo reference'),
 };
 
 const surveySections = [
@@ -394,6 +464,55 @@ const renderList = async (view) => {
 };
 
 const checkpointValueHint = (id, label) => {
+  const hints = {
+    '1.2': 'Duties / reporting line / facilities',
+    '1.4': 'Current staff count',
+    '1.9': 'Vendor / contract details',
+    '1.10': 'Target date / tenure / escalation',
+    '2.1': 'Daily use / summer tanker demand',
+    '2.2': 'TDS / unloading / meter details',
+    '2.4': 'Pump make / HP / pressure',
+    '2.6': 'Yield / TDS / cost / loss',
+    '3.1': 'Design capacity / actual flow (KLD)',
+    '3.2': 'Capacity / hardness / TDS',
+    '3.4': 'Lab result / chemical usage',
+    '3.6': 'Holder / validity / consented KLD',
+    '3.8': 'Monthly units / bill / payer',
+    '3.9': 'Operators / shifts / SLA / response',
+    '4.2': 'Machine capacity / shredder',
+    '4.3': 'Revenue share / lifting charges',
+    '4.4': 'Monthly quantities / responsibility',
+    '5.1': 'Area (sq. ft.) / water pressure',
+    '5.3': 'Tree count / species / permissions',
+    '5.4': 'Water source / seasonal schedule',
+    '6.1': 'Towers / floors / area',
+    '6.2': 'Power / water point details',
+    '6.3': 'Machines / consumables / staff needs',
+    '7.1': 'Gate / post count / locations',
+    '7.2': 'Peak-hour cover / system details',
+    '7.3': 'Agency / training / uniform / equipment',
+    '8.1': 'Headcount / shift timings',
+    '8.2': 'Capacity / AMC / vendor details',
+    '8.3': 'Hours / staffing / booking details',
+    '8.4': 'Locations / frequency',
+    '8.5': 'Software / workload details',
+    '8.6': 'Ownership / repair payer / defects',
+    '9.1': 'Amount / markup / escalation',
+    '9.2': 'Exclusion details',
+    '9.3': 'Headcount / shifts / relief',
+    '9.4': 'Deposit / payment / SLA terms',
+    '9.5': 'Outstanding documents',
+    '10.1': 'Reading / date / time / photo',
+    '10.2': 'Reading / date / time / photo',
+    '10.3': 'Reading / date / time / photo',
+    '10.4': 'Reading / date / time / photo',
+    '10.5': 'Meter / tank levels / photo',
+    '10.6': 'pH / DO / colour / odour',
+    '10.7': 'Sludge level / last lifting date',
+    '10.8': 'Stock / quantities',
+    '10.9': 'Fault / equipment / photo',
+  };
+  if (hints[id]) return hints[id];
   const text = label.toLowerCase();
   if (/guard|staff|headcount|manpower|gardener|technician/.test(text)) return 'Count / shifts';
   if (/pump|motor|dg|lift|flow|meter|capacity|electrical|power|borewell/.test(text)) return 'Capacity / reading (HP, kW, LPM)';
@@ -404,14 +523,23 @@ const checkpointValueHint = (id, label) => {
 };
 
 const renderCheckpointAnswer = (id, label) => {
-  const choice = surveyCheckpointChoices[id];
-  if (!choice) {
-    return `<label class="survey-checkpoint-item"><input type="checkbox" name="checkpoint.${id}.checked"><span>${escapeHTML(id)} ${escapeHTML(label)}</span></label><input class="survey-checkpoint-value" name="checkpoint.${id}.value" maxlength="200" aria-label="${escapeHTML(id)} short detail" placeholder="${escapeHTML(checkpointValueHint(id, label))}">`;
+  const answer = surveyCheckpointAnswers[id];
+  if (!answer || answer.type === 'detail') {
+    const hint = answer?.hint || checkpointValueHint(id, label);
+    const otherOption = answer?.other
+      ? `<label class="survey-radio-other"><input type="checkbox" name="checkpoint.${id}.choices" value="other"><span>Other</span><input type="text" name="checkpoint.${id}.other" data-other-for="${id}" maxlength="200" aria-label="Specify other ${escapeHTML(label.toLowerCase())}" placeholder="Please specify" disabled></label>`
+      : '';
+    return `<div class="survey-checkpoint-detail"><label class="survey-checkpoint-item"><input type="checkbox" name="checkpoint.${id}.checked"><span>${escapeHTML(id)} ${escapeHTML(label)}</span></label><input class="survey-checkpoint-value" name="checkpoint.${id}.value" maxlength="200" aria-label="${escapeHTML(id)} short detail" placeholder="${escapeHTML(hint)}">${otherOption}</div>`;
   }
   const otherName = `checkpoint.${id}.other`;
-  return `<div class="survey-checkpoint-choice"><h4>${escapeHTML(id)} ${escapeHTML(choice.label)}</h4><div class="survey-radio-options">${choice.options.map(([value, optionLabel]) => value === 'other'
-    ? `<label class="survey-radio-other"><input type="radio" name="checkpoint.${id}.choice" value="${value}"><span>${escapeHTML(optionLabel)}</span><input type="text" name="${otherName}" data-other-for="${id}" maxlength="200" aria-label="Specify other ${escapeHTML(choice.label.toLowerCase())}" placeholder="Please specify" disabled></label>`
-    : `<label><input type="radio" name="checkpoint.${id}.choice" value="${value}"><span>${escapeHTML(optionLabel)}</span></label>`).join('')}</div></div>`;
+  const inputType = answer.type === 'radio' ? 'radio' : 'checkbox';
+  const fieldName = answer.type === 'radio' ? `checkpoint.${id}.choice` : `checkpoint.${id}.choices`;
+  const inputOptions = answer.options.map(([value, optionLabel]) => `<label><input type="${inputType}" name="${fieldName}" value="${value}"><span>${escapeHTML(optionLabel)}</span></label>`).join('');
+  const otherOption = answer.other
+    ? `<label class="survey-radio-other"><input type="${inputType}" name="${fieldName}" value="other"><span>Other</span><input type="text" name="${otherName}" data-other-for="${id}" maxlength="200" aria-label="Specify other ${escapeHTML(answer.label.toLowerCase())}" placeholder="Please specify" disabled></label>`
+    : '';
+  const prompt = answer.label === label ? '' : `<p class="survey-answer-prompt">${escapeHTML(answer.label)}</p>`;
+  return `<div class="survey-checkpoint-choice" data-answer-type="${answer.type}"><h4>${escapeHTML(id)} ${escapeHTML(label)}</h4>${prompt}<div class="${inputType === 'radio' ? 'survey-radio-options' : 'survey-multi-options'}">${inputOptions}${otherOption}</div><input class="survey-checkpoint-value" name="checkpoint.${id}.value" maxlength="200" aria-label="${escapeHTML(id)} details" placeholder="${escapeHTML(checkpointValueHint(id, label))}"></div>`;
 };
 
 const updateSurveyRelevance = (form) => {
@@ -426,8 +554,12 @@ const updateSurveyRelevance = (form) => {
     section.hidden = !hasVisibleCheckpoints;
   });
   form.querySelectorAll('[data-other-for]').forEach((input) => {
-    const selected = form.querySelector(`input[name="checkpoint.${input.dataset.otherFor}.choice"]:checked`);
-    input.disabled = selected?.value !== 'other';
+    const id = input.dataset.otherFor;
+    const selected = form.querySelectorAll(`input[name="checkpoint.${id}.choice"]:checked, input[name="checkpoint.${id}.choices"]:checked`);
+    const isOtherSelected = !input.closest('.survey-checkpoint').hidden
+      && [...selected].some((option) => option.value === 'other');
+    input.disabled = !isOtherSelected;
+    input.required = isOtherSelected;
     if (input.disabled) input.value = '';
   });
   form.querySelectorAll('[data-additional-scope]').forEach((scope) => {
@@ -457,7 +589,7 @@ const renderSurveyForm = () => {
     <section class="survey-stage" data-survey-step="1"${surveyStep === 1 ? '' : ' hidden'}><fieldset class="survey-panel"><legend>Step 1: Site and survey details</legend><div class="survey-grid"><label>Site<select name="site_id" required>${bootstrap.sites.map((site) => `<option value="${escapeHTML(site.site_id)}"${selectedSurveySite === site.site_id ? ' selected' : ''}>${escapeHTML(site.site_name || site.site_id)}</option>`).join('')}</select></label>${metadata.map(([key, label, type, required]) => `<label>${label}<input name="${key}" type="${type}"${key === 'survey_date' ? ` value="${today}"` : ''}${required ? ' required' : ''} maxlength="200"></label>`).join('')}</div></fieldset><div class="admin-form-actions"><button class="btn" type="button" data-action="survey-next">Continue to scope matrix</button></div></section>
     <section class="survey-stage" data-survey-step="2"${surveyStep === 2 ? '' : ' hidden'}><details class="survey-panel" open><summary>Step 2: Quick scope matrix</summary><p class="survey-help">Check each service required for this site. Only the matching survey questions will be shown. Leave a service unchecked if it is not required.</p><div class="survey-scope-grid">${surveyServices.map(([id, label]) => `<label class="survey-scope-option"><input type="checkbox" name="service_scope.${id}" value="true"><span>${escapeHTML(label)}</span></label>`).join('')}${['other_1', 'other_2'].map((id, index) => `<label class="survey-custom-scope">Additional scope ${index + 1}<input type="text" name="additional_scope.${id}" maxlength="100" placeholder="Describe an additional service"></label>`).join('')}</div></details><div class="admin-form-actions"><button class="admin-cancel" type="button" data-action="survey-back">Back</button><button class="btn" type="button" data-action="survey-next">Continue to survey questions</button></div></section>
     <section class="survey-stage" data-survey-step="3"${surveyStep === 3 ? '' : ' hidden'}><p class="survey-help">Step 3: Tick each item you inspected and add a short count, reading, capacity or finding. Add longer observations in the notes box at the end of each section.</p>
-    ${surveySections.map((section) => `<details class="survey-panel survey-section" data-section="${section.id}"><summary>Section ${section.id}: ${escapeHTML(section.title)}</summary><div class="survey-checkpoints">${section.checkpoints.map(([id, label, service]) => `<div class="survey-checkpoint${surveyCheckpointChoices[id] ? ' survey-checkpoint-radio' : ''}" data-checkpoint="${id}" data-service="${service || section.service || ''}">${renderCheckpointAnswer(id, label)}</div>`).join('')}</div><label class="survey-section-notes">Additional notes for Section ${section.id}<textarea name="section_notes.${section.id}" rows="3" maxlength="2000" placeholder="Record observations, issues, photo references and follow-up details for this section"></textarea></label></details>`).join('')}
+    ${surveySections.map((section) => `<details class="survey-panel survey-section" data-section="${section.id}"><summary>Section ${section.id}: ${escapeHTML(section.title)}</summary><div class="survey-checkpoints">${section.checkpoints.map(([id, label, service]) => `<div class="survey-checkpoint${surveyCheckpointAnswers[id] ? ' survey-checkpoint-radio' : ''}" data-checkpoint="${id}" data-service="${service || section.service || ''}">${renderCheckpointAnswer(id, label)}</div>`).join('')}</div><label class="survey-section-notes">Additional notes for Section ${section.id}<textarea name="section_notes.${section.id}" rows="3" maxlength="2000" placeholder="Record observations, issues, photo references and follow-up details for this section"></textarea></label></details>`).join('')}
     ${['other_1', 'other_2'].map((id) => `<details class="survey-panel" data-additional-scope="${id}" hidden><summary><span data-additional-scope-heading>Additional scope</span></summary><div class="survey-checkpoints"><fieldset class="survey-checkpoint"><legend>Assessment</legend><label>Status<select name="additional_scope_detail.${id}.status"><option value="not_assessed">Not assessed</option><option value="ok">No issue noted</option><option value="issue">Issue / risk noted</option><option value="follow_up">Follow-up required</option></select></label><label>Requirements, measurements and notes<textarea name="additional_scope_detail.${id}.notes" rows="2" maxlength="300"></textarea></label></fieldset></div></details>`).join('')}
     <details class="survey-panel"><summary>Pre-takeover snag list and sign-off</summary><div class="survey-grid">${[1, 2, 3].map((n) => `<label>Critical snag ${n}<textarea name="snag_${n}" rows="2" maxlength="300"></textarea></label>`).join('')}<label>Society representative<input name="society_representative" maxlength="200"></label><label>Technical partner<input name="partner_technician" maxlength="200"></label><label>Civic Pulse representative<input name="civic_pulse_representative" maxlength="200"></label><label>Sign-off date<input name="signoff_date" type="date"></label></div></details>
     <details class="survey-panel"><summary>Annex A: site sketch and shared-infrastructure map</summary><p class="survey-help">Describe boundaries, gates, STP, WTP, UGT / OHT, borewells, DG, pump rooms, garbage / OWC and garden zones. Add photo or sketch references; file uploads are not enabled.</p><label>Map notes, shared-asset ownership, drawn by, date and approximate scale<textarea name="annex_a_map_notes" rows="5" maxlength="2000"></textarea></label></details>
@@ -505,12 +637,22 @@ const populateSurveyForm = (form, record) => {
     if (checked) {
       checked.checked = checkpoint.checked ?? !['not_assessed', 'not_applicable'].includes(checkpoint.status);
     }
-    if (surveyCheckpointChoices[id]) {
-      const selectedChoice = form.elements.namedItem(`checkpoint.${id}.choice`);
-      if (selectedChoice) {
-        [...form.querySelectorAll(`input[name="checkpoint.${id}.choice"]`)]
-          .forEach((radio) => { radio.checked = radio.value === checkpoint.choice; });
-      }
+    const answerDefinition = surveyCheckpointAnswers[id];
+    if (answerDefinition?.type === 'radio') {
+      [...form.querySelectorAll(`input[name="checkpoint.${id}.choice"]`)]
+        .forEach((radio) => { radio.checked = radio.value === checkpoint.choice; });
+      setValue(`checkpoint.${id}.other`, checkpoint.other ?? '');
+      setValue(`checkpoint.${id}.value`, checkpoint.value ?? '');
+    } else if (answerDefinition?.type === 'multi') {
+      const selectedChoices = new Set(checkpoint.choices || []);
+      form.querySelectorAll(`input[name="checkpoint.${id}.choices"]`)
+        .forEach((checkbox) => { checkbox.checked = selectedChoices.has(checkbox.value); });
+      setValue(`checkpoint.${id}.other`, checkpoint.other ?? '');
+      setValue(`checkpoint.${id}.value`, checkpoint.value ?? '');
+    } else if (answerDefinition?.type === 'detail') {
+      const otherSelected = (checkpoint.choices || []).includes('other') || checkpoint.other_selected === true;
+      const otherCheckbox = form.querySelector(`input[name="checkpoint.${id}.choices"][value="other"]`);
+      if (otherCheckbox) otherCheckbox.checked = otherSelected;
       setValue(`checkpoint.${id}.other`, checkpoint.other ?? '');
     }
     setValue(`checkpoint.${id}.value`, checkpoint.value ?? checkpoint.notes ?? '');
@@ -840,20 +982,41 @@ root.addEventListener('submit', async (event) => {
     checkpoints: Object.fromEntries([...form.querySelectorAll('.survey-checkpoint[data-checkpoint]:not([hidden])')]
       .map((checkpoint) => {
         const id = checkpoint.dataset.checkpoint;
-        const label = checkpoint.querySelector('.survey-checkpoint-item span').textContent.trim();
+        const rawLabel = checkpoint.querySelector('.survey-checkpoint-item span, .survey-checkpoint-choice h4')?.textContent.trim()
+          || checkpoint.querySelector('.survey-checkpoint-choice .survey-answer-prompt')?.textContent.trim()
+          || id;
+        const label = rawLabel.startsWith(`${id} `) ? rawLabel.slice(id.length + 1) : rawLabel;
         return [id, {
           question: label,
           section: checkpoint.closest('.survey-section').querySelector('summary').textContent.trim(),
-          ...(surveyCheckpointChoices[id]
+          ...(surveyCheckpointAnswers[id]?.type === 'radio'
             ? {
-              choice: form.elements.namedItem(`checkpoint.${id}.choice`).value,
-              choice_label: surveyCheckpointChoices[id].options.find(([option]) => option === form.elements.namedItem(`checkpoint.${id}.choice`).value)?.[1] || '',
+              choice: value(`checkpoint.${id}.choice`),
+              choice_label: value(`checkpoint.${id}.choice`) === 'other'
+                ? 'Other'
+                : surveyCheckpointAnswers[id].options.find(([option]) => option === value(`checkpoint.${id}.choice`))?.[1] || '',
               other: value(`checkpoint.${id}.other`),
-            }
-            : {
-              checked: form.elements.namedItem(`checkpoint.${id}.checked`).checked,
               value: value(`checkpoint.${id}.value`),
-            }),
+            }
+            : surveyCheckpointAnswers[id]?.type === 'multi'
+              ? {
+                choices: formData.getAll(`checkpoint.${id}.choices`).map(String),
+                choice_labels: formData.getAll(`checkpoint.${id}.choices`).map(String).map((selected) => selected === 'other'
+                  ? `Other: ${value(`checkpoint.${id}.other`)}`
+                  : surveyCheckpointAnswers[id].options.find(([option]) => option === selected)?.[1] || selected),
+                other: value(`checkpoint.${id}.other`),
+                value: value(`checkpoint.${id}.value`),
+              }
+              : {
+                checked: form.elements.namedItem(`checkpoint.${id}.checked`).checked,
+                ...(surveyCheckpointAnswers[id]?.type === 'detail'
+                  ? {
+                    other_selected: formData.getAll(`checkpoint.${id}.choices`).includes('other'),
+                    other: value(`checkpoint.${id}.other`),
+                  }
+                  : {}),
+                value: value(`checkpoint.${id}.value`),
+              }),
         }];
       })),
     critical_snags: [1, 2, 3].map((n) => value(`snag_${n}`)).filter(Boolean),
