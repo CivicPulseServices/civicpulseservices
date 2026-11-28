@@ -182,12 +182,17 @@ footer a{display:block;text-decoration:none;margin:4px 0}
 .survey-checkpoint-item input{width:18px;height:18px;flex:none;margin:1px 0 0;accent-color:var(--teal)}
 .survey-checkpoint-item span{color:var(--tx);font-size:.88rem;line-height:1.45}
 .survey-checkpoint-value{width:100%;min-width:0;margin:0!important;background:var(--bg);color:var(--tx);border-color:var(--line)}
+.survey-checkpoint-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.6fr);align-items:center;gap:12px}
 .survey-checkpoint-radio{grid-template-columns:minmax(0,1fr)}
 .survey-checkpoint-choice h4{margin:0 0 10px;color:var(--tx);font-size:.9rem}
+.survey-answer-prompt{margin:0 0 8px;color:var(--mute);font-size:.82rem}
 .survey-radio-options{display:flex;flex-wrap:wrap;gap:8px 18px}
 .survey-radio-options label{display:flex!important;align-items:center;gap:7px;cursor:pointer;font-weight:500}
 .survey-radio-options input[type="radio"]{width:17px;height:17px;margin:0;accent-color:var(--teal)}
-.survey-radio-options .survey-radio-other{display:inline-flex!important;flex-wrap:wrap;align-items:center;gap:7px}
+.survey-multi-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 14px}
+.survey-multi-options label{display:flex!important;align-items:flex-start;gap:7px;cursor:pointer;font-weight:500}
+.survey-multi-options input[type="checkbox"]{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:var(--teal)}
+.survey-radio-options .survey-radio-other,.survey-multi-options .survey-radio-other,.survey-checkpoint-detail .survey-radio-other{display:inline-flex!important;flex-wrap:wrap;align-items:center;gap:7px}
 .survey-radio-other input[type="text"]{width:min(220px,45vw);margin:0!important;background:var(--bg);color:var(--tx);border-color:var(--line)}
 .survey-section-notes{display:block;margin-top:16px;color:var(--tx);font-size:.84rem;font-weight:650}
 .survey-section-notes textarea{width:100%;margin-top:5px;background:var(--bg);color:var(--tx);border-color:var(--line)}
@@ -197,6 +202,6 @@ footer a{display:block;text-decoration:none;margin:4px 0}
 .survey-record-detail pre{overflow:auto;max-height:520px;padding:14px;border-radius:9px;background:var(--bg);font-size:.78rem;white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:860px){.hero .g,.split,.split.rev,.tabs,.tp,.cgrid,.sect,.grid4{grid-template-columns:1fr}.stats,.steps{grid-template-columns:1fr 1fr}.split.rev .art{order:0}section{padding:44px 0}.hero{padding:38px 0 76px}.bar{height:auto;padding:10px 0;flex-wrap:wrap}nav{width:100%;overflow-x:auto}nav a{padding:6px 10px;font-size:.82rem}.scene{max-width:280px}.art{max-width:260px}}
 @media (max-width:860px){.admin-layout{grid-template-columns:minmax(0,1fr)}.admin-sidebar{grid-template-columns:repeat(5,max-content);overflow:auto}.admin-sidebar-title{display:none}.admin-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:520px){.admin-page{padding-top:18px}.admin-toolbar-top{align-items:flex-start;flex-direction:column}.admin-page-heading{align-items:flex-start;flex-direction:column}.admin-toolbar{align-items:stretch;flex-direction:column}.admin-toolbar input{max-width:none}.admin-cards{gap:9px}.admin-stat{padding:13px}.admin-stat b{font-size:1.5rem}.admin-panel{padding:15px}.survey-grid,.survey-scope-grid{grid-template-columns:minmax(0,1fr)}.survey-checkpoint{grid-template-columns:minmax(0,1fr)}.survey-form-heading,.survey-record-summary{flex-direction:column}}
+@media (max-width:520px){.admin-page{padding-top:18px}.admin-toolbar-top{align-items:flex-start;flex-direction:column}.admin-page-heading{align-items:flex-start;flex-direction:column}.admin-toolbar{align-items:stretch;flex-direction:column}.admin-toolbar input{max-width:none}.admin-cards{gap:9px}.admin-stat{padding:13px}.admin-stat b{font-size:1.5rem}.admin-panel{padding:15px}.survey-grid,.survey-scope-grid,.survey-checkpoint-detail{grid-template-columns:minmax(0,1fr)}.survey-checkpoint{grid-template-columns:minmax(0,1fr)}.survey-form-heading,.survey-record-summary{flex-direction:column}}
 @media (max-width:520px){.stats,.steps{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.ecg path{stroke-dashoffset:0}html{scroll-behavior:auto}}
