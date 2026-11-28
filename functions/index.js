@@ -1,8 +1,6 @@
 'use strict';
 
-const { google } = require('googleapis');
 const { randomUUID } = require('node:crypto');
-const PDFDocument = require('pdfkit');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { defineSecret, defineString } = require('firebase-functions/params');
@@ -15,6 +13,8 @@ const allowedWebOrigins = defineString('ALLOWED_WEB_ORIGINS');
 const gmailOAuthClientId = defineSecret('GMAIL_OAUTH_CLIENT_ID');
 const gmailOAuthClientSecret = defineSecret('GMAIL_OAUTH_CLIENT_SECRET');
 const gmailRefreshToken = defineSecret('GMAIL_REFRESH_TOKEN');
+
+const getGoogle = () => require('googleapis').google;
 
 const dataTabs = new Set([
   'Users',
@@ -49,6 +49,7 @@ const surveyHeaders = [
 ];
 
 const getSheets = async () => {
+  const google = getGoogle();
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
@@ -127,6 +128,7 @@ const listSurveys = async (sheets, permission, siteId) => {
 };
 
 const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
+  const PDFDocument = require('pdfkit');
   const document = new PDFDocument({ margin: 48, size: 'A4' });
   const chunks = [];
   document.on('data', (chunk) => chunks.push(chunk));
@@ -216,6 +218,7 @@ const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
 });
 
 const sendSurveyPdf = async (siteName, survey, surveyId) => {
+  const google = getGoogle();
   const auth = new google.auth.OAuth2(
     gmailOAuthClientId.value(),
     gmailOAuthClientSecret.value(),
