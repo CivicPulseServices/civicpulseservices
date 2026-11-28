@@ -183,22 +183,26 @@ const createSurveyPdf = (siteName, survey) => new Promise((resolve, reject) => {
   document.moveDown().font('Helvetica-Bold').text('Survey questions and findings');
   const checkpoints = survey.checkpoints || {};
   let previousSection = '';
+  let previousSectionId = '';
+  const writeSectionNotes = (sectionId) => {
+    const notes = survey.section_notes?.[sectionId];
+    if (notes) {
+      document.moveDown(0.5).font('Helvetica-Bold').text('Additional section notes');
+      document.font('Helvetica').text(notes);
+    }
+  };
   Object.entries(checkpoints).forEach(([id, answer]) => {
     if (answer.section && answer.section !== previousSection) {
+      writeSectionNotes(previousSectionId);
       document.moveDown().font('Helvetica-Bold').text(answer.section);
       previousSection = answer.section;
+      previousSectionId = answer.section.match(/^Section\s+(\d+)/)?.[1] || '';
     }
     document.moveDown(0.5).font('Helvetica-Bold').text(`${id}. ${answer.question || 'Checklist item'}`);
-    const statusLabels = {
-      not_assessed: 'Not assessed',
-      ok: 'No issue noted',
-      issue: 'Issue / risk noted',
-      follow_up: 'Follow-up required',
-      not_applicable: 'Not applicable',
-    };
-    document.font('Helvetica').text(`Assessment: ${statusLabels[answer.status] || answer.status || 'Not assessed'}`);
-    if (answer.notes) document.text(`Findings: ${answer.notes}`);
+    const checked = answer.checked ?? !['not_assessed', 'not_applicable'].includes(answer.status);
+    document.font('Helvetica').text(`${checked ? '[x] Inspected' : '[ ] Not inspected'}${answer.value || answer.notes ? `  |  ${answer.value || answer.notes}` : ''}`);
   });
+  writeSectionNotes(previousSectionId);
   Object.entries(survey.section_scope || {}).forEach(([id, scope]) => {
     document.font('Helvetica').text(`Section ${id} scope: ${scope}`);
   });
