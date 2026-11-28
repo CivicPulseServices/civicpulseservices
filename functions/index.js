@@ -398,6 +398,10 @@ const getIdentity = async (req) => {
   try {
     decoded = await getAuth().verifyIdToken(match[1], true);
   } catch (cause) {
+    console.warn('Firebase ID token verification failed:', {
+      code: cause.code || 'unknown',
+      message: cause.message || 'No verification error message was provided.',
+    });
     const error = new Error('Your sign-in session is invalid or expired. Sign in again.');
     error.status = 401;
     throw error;
