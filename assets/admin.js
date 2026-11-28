@@ -31,7 +31,7 @@ const sitePicker = document.querySelector('#admin-site-picker');
 const dialog = document.querySelector('#record-dialog');
 const surveyPageLink = document.querySelector('[data-survey-page-link]');
 const pageTitle = document.querySelector('#admin-page-title');
-const isSurveyPage = document.body.dataset.page === 'site-survey';
+const isSurveyPage = document.body.dataset.page === 'survey';
 if (!root || !workspace || !status || !authButton || !sitePicker || !dialog) {
   throw new Error('Admin portal elements are missing from the page.');
 }
